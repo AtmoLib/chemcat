@@ -3,6 +3,7 @@ include README.md
 include LICENSE
 include pyproject.toml
 include requirements.txt
+include .travis.yml
 include .readthedocs.yml
 include chemcat/data/*
 include chemcat/data/janaf/*
