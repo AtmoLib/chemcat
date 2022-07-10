@@ -5,7 +5,8 @@
 [![Documentation Status](https://readthedocs.org/projects/chemcat/badge/?version=latest)](https://chemcat.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/chemcat.svg)](https://pypi.org/project/chemcat)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/chemcat.svg)](https://anaconda.org/conda-forge/chemcat)
-[![GitHub](https://img.shields.io/github/license/atmochem/chemcat.svg?color=blue)](https://chemcat.readthedocs.io/en/latest/license.html)
+[![GitHub](https://img.shields.io/github/license/atmolib/chemcat.svg?color=blue)](https://chemcat.readthedocs.io/en/latest/license.html)
+
 
 ### Install as:
 ```
