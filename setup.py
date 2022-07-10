@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Cubillos and Blecic
+# Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 import os
@@ -17,7 +17,7 @@ def get_version(package):
     return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
-srcdir = 'src_c/' # C-code source folder
+srcdir = 'src_c/'  # C-code source folder
 incdir = 'src_c/include/'  # Include filder with header files
 
 cfiles = os.listdir(srcdir)
@@ -39,13 +39,21 @@ extensions = [
     for cfile in cfiles
 ]
 
+package_data = {
+    'chemcat': [
+        'data/janaf_conversion.txt',
+        'data/janaf/*',
+    ]
+}
+
 setup(
     name = 'chemcat',
     version = get_version('chemcat'),
-    author = 'P. Cubillos and J. Blecic',
+    author = 'Jasmina Blecic and Patricio Cubillos',
     author_email = 'patricio.cubillos@oeaw.ac.at',
     url = 'https://github.com/atmolib/chemcat',
     packages = setuptools.find_packages(),
+    package_data = package_data,
     install_requires = [
         'numpy>=1.19.1',
         'scipy>=1.5.2',
