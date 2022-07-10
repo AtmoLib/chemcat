@@ -1,0 +1,13 @@
+include MANIFEST.in
+include README.md
+include LICENSE
+include pyproject.toml
+include requirements.txt
+include .readthedocs.yml
+include .github/workflows/python-package.yml
+include chemcat/data/*
+include chemcat/data/janaf/*
+include src_c/*
+include src_c/include/*
+include tests/*
+include docs/*
