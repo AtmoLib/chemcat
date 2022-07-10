@@ -86,13 +86,13 @@ Thank you for using ``chemcat``!
 .. _patricio.cubillos[at]oeaw.ac.at: patricio.cubillos@oeaw.ac.at
 .. _jasmina[at]nyu.edu: jasmina@nyu.edu
 
-.. |Build Status| image:: https://travis-ci.com/atmolib/chemcat.svg?branch=master
-   :target: https://travis-ci.com/atmolib/chemcat
+
+.. |Build Status| image:: https://github.com/AtmoLib/chemcat/actions/workflows/python-package.yml/badge.svg
+    :target: https://github.com/AtmoLib/chemcat/actions/workflows/python-package.yml
 
 .. |docs| image:: https://readthedocs.org/projects/chemcat/badge/?version=latest
     :target: https://chemcat.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
-
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/chemcat.svg
     :target:      https://pypi.org/project/chemcat/

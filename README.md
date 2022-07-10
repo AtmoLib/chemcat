@@ -1,7 +1,7 @@
 # chemcat
 > Chemistry Calculator for Atmospheres
 
-[![Build Status](https://travis-ci.com/chemcat/chemcat.svg?branch=master)](https://travis-ci.com/atmolib/chemcat)
+[![Tests](https://github.com/AtmoLib/chemcat/actions/workflows/python-package.yml/badge.svg)](https://github.com/AtmoLib/chemcat/actions/workflows/python-package.yml)
 [![Documentation Status](https://readthedocs.org/projects/chemcat/badge/?version=latest)](https://chemcat.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/chemcat.svg)](https://pypi.org/project/chemcat)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/chemcat.svg)](https://anaconda.org/conda-forge/chemcat)
