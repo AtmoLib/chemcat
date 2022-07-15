@@ -1,9 +1,6 @@
 # Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
-import os
-from pathlib import Path
-import sys
 import numpy as np
 
 import chemcat.janaf as janaf
@@ -196,72 +193,55 @@ def test_read_stoich_from_formula():
 
 
 def test_setup_janaf_network_neutrals():
-    molecules = 'H2O CH4 CO CO2 H2 C2H2 C2H4 OH H He'.split()
+    molecules = 'H2O CH4 CO2 H2 H He'.split()
     janaf_data = janaf.setup_network(molecules)
 
-    expected_elements = ['He', 'C', 'H', 'O']
-    expected_stoich_vals = np.array([
-        [0, 2, 0, 1],
-        [1, 4, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 0, 2],
-        [0, 2, 0, 0],
-        [2, 2, 0, 0],
-        [2, 4, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0]
-    ])
+    expected_stoich = [
+        {'H': 2.0, 'O': 1.0},
+        {'C': 1.0, 'H': 4.0},
+        {'C': 1.0, 'O': 2.0},
+        {'H': 2.0},
+        {'H': 1.0},
+        {'He': 1.0},
+    ]
 
-    assert len(janaf_data) == 5
-    np.testing.assert_equal(janaf_data[0], molecules)
-    np.testing.assert_equal(janaf_data[1], ['C', 'H', 'He', 'O'])
-    np.testing.assert_equal(janaf_data[4], expected_stoich_vals)
+    assert len(janaf_data) == 4
+    np.testing.assert_equal(janaf_data[3], expected_stoich)
 
 
 def test_setup_janaf_network_ions():
-    molecules = 'H2O CH4 CO CO2 H2 C2H2 C2H4 OH H He e- H- H+ H2+ He+'.split()
+    molecules = 'H2O CH4 CO2 H2 H He e- H- H2+'.split()
     janaf_data = janaf.setup_network(molecules)
 
-    expected_stoich_vals = np.array([
-        [ 0,  2,  0,  1,  0],
-        [ 1,  4,  0,  0,  0],
-        [ 1,  0,  0,  1,  0],
-        [ 1,  0,  0,  2,  0],
-        [ 0,  2,  0,  0,  0],
-        [ 2,  2,  0,  0,  0],
-        [ 2,  4,  0,  0,  0],
-        [ 0,  1,  0,  1,  0],
-        [ 0,  1,  0,  0,  0],
-        [ 0,  0,  1,  0,  0],
-        [ 0,  0,  0,  0,  1],
-        [ 0,  1,  0,  0,  1],
-        [ 0,  1,  0,  0, -1],
-        [ 0,  2,  0,  0, -1],
-        [ 0,  0,  1,  0, -1]
-    ])
+    expected_stoich = [
+        {'H': 2.0, 'O': 1.0},
+        {'C': 1.0, 'H': 4.0},
+        {'C': 1.0, 'O': 2.0},
+        {'H': 2.0},
+        {'H': 1.0},
+        {'He': 1.0},
+        {'e': 1.0},
+        {'e': 1, 'H': 1.0},
+        {'e': -1, 'H': 2.0},
+    ]
 
-    assert len(janaf_data) == 5
     np.testing.assert_equal(janaf_data[0], molecules)
-    np.testing.assert_equal(janaf_data[1], ['C', 'H', 'He', 'O', 'e'])
-    np.testing.assert_equal(janaf_data[4], expected_stoich_vals)
+    np.testing.assert_equal(janaf_data[3], expected_stoich)
 
 
 def test_setup_janaf_network_missing_species():
-    molecules = 'Ti Ti+ TiO TiO2 TiO+'.split()
+    molecules = 'Ti Ti+ TiO TiO+ TiO2'.split()
     janaf_data = janaf.setup_network(molecules)
 
-    expected_stoich_vals = np.array([
-        [ 0,  1,  0],
-        [ 0,  1, -1],
-        [ 1,  1,  0],
-        [ 2,  1,  0]
-    ])
+    expected_stoich = [
+        {'Ti': 1.0},
+        {'e': -1, 'Ti': 1.0},
+        {'O': 1.0, 'Ti': 1.0},
+        {'O': 2.0, 'Ti': 1.0},
+    ]
 
-    assert len(janaf_data) == 5
     np.testing.assert_equal(janaf_data[0], ['Ti', 'Ti+', 'TiO', 'TiO2'])
-    np.testing.assert_equal(janaf_data[1], ['O', 'Ti', 'e'])
-    np.testing.assert_equal(janaf_data[4], expected_stoich_vals)
+    np.testing.assert_equal(janaf_data[3], expected_stoich)
 
 
 def test_find_species_single():

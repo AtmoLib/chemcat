@@ -9,8 +9,6 @@ __all__ = [
     'find_species',
 ]
 
-import os
-from pathlib import Path
 import sys
 from collections.abc import Iterable
 
@@ -264,7 +262,6 @@ def setup_network(input_species):
     thermo_data = read_thermo_build(input_species)
 
     cea_species = [data['name'] for data in thermo_data]
-    nspecies = len(input_species)
     idx_missing = np.array([
         spec not in cea_species for spec in input_species])
     if np.any(idx_missing):
@@ -275,7 +272,6 @@ def setup_network(input_species):
 
     species = np.array(input_species)[~idx_missing]
 
-    nspecies = len(species)
     heat_capacity = []
     gibbs_free_energy = []
     stoich_data = []

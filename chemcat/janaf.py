@@ -2,6 +2,7 @@
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
+    'is_in',
     'get_filenames',
     'read_file',
     'read_stoich',
@@ -9,16 +10,48 @@ __all__ = [
     'find_species',
 ]
 
-import os
-from pathlib import Path
-
 import more_itertools
 import numpy as np
 import scipy.interpolate as si
 import scipy.constants as sc
 
+from . import utils as u
 
-ROOT = str(Path(__file__).parents[1]) + os.path.sep
+
+def is_in(species):
+    r"""
+    Element-wise check whether species name exist in CEA database.
+
+    Parameters
+    ----------
+    species: 1D iterable of strings
+        Names of species to search in the database.
+
+    Returns
+    -------
+    in_database: 1D bool array
+        Flag whether each species is in the database.
+
+    Examples
+    --------
+    >>> import chemcat.janaf as janaf
+    >>> species = 'H2O (KOH)2 HO2 CO'.split()
+    >>> in_janaf = janaf.is_in(species)
+    >>> for spec, is_in in zip(species, in_janaf):
+    >>>     print(f'{spec:6s}  {is_in}')
+    H2O     True
+    (KOH)2  True
+    HO2     False
+    CO      True
+    """
+    species = np.atleast_1d(species)
+    janaf_names = [
+        line.split()[0]
+        for line in open(f'{u.ROOT}chemcat/data/janaf_conversion.txt', 'r')
+    ]
+
+    in_database = np.isin(species, janaf_names)
+    return in_database
 
 
 def get_filenames(species):
@@ -57,7 +90,7 @@ def get_filenames(species):
     species = np.atleast_1d(species)
 
     janaf_dict = {}
-    for line in open(f'{ROOT}chemcat/data/janaf_conversion.txt', 'r'):
+    for line in open(f'{u.ROOT}chemcat/data/janaf_conversion.txt', 'r'):
         species_name, janaf_name = line.split()
         janaf_dict[species_name] = janaf_name
 
@@ -109,7 +142,7 @@ def read_file(janaf_file):
     450.00  2.500  -2.709
     """
     janaf_data = np.genfromtxt(
-        f'{ROOT}chemcat/data/janaf/{janaf_file}',
+        f'{u.ROOT}chemcat/data/janaf/{janaf_file}',
         skip_header=3, usecols=(0,1,3,5), delimiter='\t',
         filling_values=np.nan,
         unpack=True,
@@ -175,7 +208,7 @@ def read_stoich(species=None, janaf_file=None, formula=None):
     if formula is None and species is not None:
         janaf_file = get_filenames(species)[0]
     if formula is None and janaf_file is not None:
-        with open(f'{ROOT}chemcat/data/janaf/{janaf_file}', 'r') as f:
+        with open(f'{u.ROOT}chemcat/data/janaf/{janaf_file}', 'r') as f:
             header = f.readline()
         formula = header.split('\t')[-1]
         formula = formula[0:formula.index('(')]
@@ -215,16 +248,13 @@ def setup_network(input_species):
     -------
     species: 1D string array
         Species found in the JANAF database (might differ from input_species).
-    elements: 1D string array
-        Elements for this chemical network.
     heat_capacity_splines: 1D list of numpy splines
         Splines sampling the species' heat capacity/R.
     gibbs_free_energy: 1D list of callable objects
         Functions that return the species's Gibbs free energy, G/RT.
-    stoich_vals: 2D integer array
-        Array containing the stoichiometric values for the
-        requested species sorted according to the species and elements
-        arrays.
+    stoich_data: List of Dictionaries
+        Stoichiometric data (as dictionary of element-value pairs) for
+        a list of species.
 
     Examples
     --------
@@ -234,29 +264,8 @@ def setup_network(input_species):
     >>> species, elements, cp_funcs, gibbs_funcs, stoich_vals = \
     >>>     janaf.setup_network(molecules)
 
-    >>> print(
-    >>>     f'species:\n  {species}\n'
-    >>>     f'elements:\n  {elements}\n'
-    >>>     f'stoichiometric values:\n{stoich_vals}')
-    species:
-      ['H2O' 'CH4' 'CO' 'CO2' 'NH3' 'N2' 'H2' 'HCN' 'OH' 'H' 'He' 'C' 'N' 'O']
-    elements:
-      ['C' 'H' 'He' 'N' 'O']
-    stoichiometric values:
-    [[0 2 0 0 1]
-     [1 4 0 0 0]
-     [1 0 0 0 1]
-     [1 0 0 0 2]
-     [0 3 0 1 0]
-     [0 0 0 2 0]
-     [0 2 0 0 0]
-     [1 1 0 1 0]
-     [0 1 0 0 1]
-     [0 1 0 0 0]
-     [0 0 1 0 0]
-     [1 0 0 0 0]
-     [0 0 0 1 0]
-     [0 0 0 0 1]]
+    >>> for spec, stoich in zip(species, stoich_data):
+    >>>     print(f'{spec:3s}:  {stoich}')
     """
     # Find which species exists in data base:
     janaf_species = get_filenames(input_species)
@@ -286,25 +295,11 @@ def setup_network(input_species):
             temp, gibbs, kind='cubic', fill_value='extrapolate'))
         stoich_data.append(read_stoich(janaf_file=janaf))
 
-    elements = []
-    for s in stoich_data:
-        elements += list(s.keys())
-    elements = sorted(set(elements))
-
-    nelements = len(elements)
-    stoich_vals = np.zeros((nspecies, nelements), int)
-    for i in range(nspecies):
-        for key,val in stoich_data[i].items():
-            j = elements.index(key)
-            stoich_vals[i,j] = val
-    elements = np.array(elements)
-
     return (
         species,
-        elements,
         heat_capacity,
         gibbs_free_energy,
-        stoich_vals,
+        stoich_data,
     )
 
 
@@ -375,7 +370,7 @@ def find_species(elements, charge='neutral', num_atoms=None, state='gas'):
         elements = {e:None for e in elements}
 
     janaf_dict = {}
-    for line in open(f'{ROOT}chemcat/data/janaf_conversion.txt', 'r'):
+    for line in open(f'{u.ROOT}chemcat/data/janaf_conversion.txt', 'r'):
         species_name, janaf_name = line.split()
         janaf_dict[species_name] = janaf_name
 
