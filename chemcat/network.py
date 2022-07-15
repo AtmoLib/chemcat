@@ -25,6 +25,29 @@ sys.path.append(f'{ROOT}chemcat/lib')
 import _thermo as nr
 
 
+class Thermo_Prop():
+    """
+    To understand this sorcery see:
+    https://docs.python.org/3/howto/descriptor.html
+    """
+    def __set_name__(self, obj, name):
+        self.private_name = '_' + name
+
+    def __get__(self, obj, objtype=None):
+        value = getattr(obj, self.private_name)
+        return value
+
+    def __set__(self, obj, value):
+        print(f'Updating {self.private_name[1:]} to {value}')
+        setattr(obj, self.private_name, value)
+        if hasattr(obj, 'metallicity') and hasattr(obj, 'e_abundances'):
+            obj.element_rel_abundance = set_element_abundance(
+                obj.elements,
+                obj._base_composition, obj._base_dex_abundances,
+                obj.metallicity, obj.e_abundances,
+            )
+
+
 class Network(object):
     r"""
     A chemcat chemical network object.
@@ -65,6 +88,9 @@ class Network(object):
      3.5409384  5.4895911  3.56763887 2.49998117 2.49998117 2.50106362
      2.49998117 2.53053035]
     """
+    metallicity = Thermo_Prop()
+    e_abundances = Thermo_Prop()
+
     def __init__(
         self, pressure, temperature, input_species,
         metallicity=0.0,
