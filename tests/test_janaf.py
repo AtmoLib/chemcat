@@ -263,3 +263,28 @@ def test_setup_janaf_network_missing_species():
     np.testing.assert_equal(janaf_data[1], ['O', 'Ti', 'e'])
     np.testing.assert_equal(janaf_data[4], expected_stoich_vals)
 
+
+def test_find_species_single():
+    expected_species = [
+       'K2', 'K2SO4', 'KBF4', 'KBO2', '(KBr)2', 'KBr', '(KCl)2', 'KCl',
+       '(KCN)2', 'KCN', '(KF)2', 'KF', 'K', 'KH', '(KI)2', 'KI', 'KO',
+       '(KOH)2', 'KOH']
+    salts = janaf.find_species(['K'])
+    assert list(salts) == expected_species
+
+
+def test_find_species_multiple():
+    specs = janaf.find_species('H C O'.split())
+    assert list(specs) == ['C2H4O', 'H2CO', 'HCOF', 'HCO', 'HNCO']
+
+
+def test_find_species_ions():
+    specs = janaf.find_species('C H'.split(), charge='ion')
+    assert list(specs) == ['CH+', 'HCO+']
+
+
+def test_find_species_neutral_and_ions():
+    specs = janaf.find_species('H C O'.split(), charge='all')
+    assert list(specs) == ['C2H4O', 'H2CO', 'HCOF', 'HCO', 'HCO+', 'HNCO']
+
+

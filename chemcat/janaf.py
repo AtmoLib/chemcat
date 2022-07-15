@@ -6,6 +6,7 @@ __all__ = [
     'read_file',
     'read_stoich',
     'setup_network',
+    'find_species',
 ]
 
 import os
@@ -306,5 +307,66 @@ def setup_network(input_species):
         stoich_vals,
     )
 
+
+def find_species(elements, state='gas', charge='neutral'):
+    """
+    Find all JANAF species that contain the specified properties
+    (elements, charge, state).
+
+    Parameters
+    ----------
+    elements: 1D string iterable
+    state: String
+        If 'gas', limit the output to gaseous species.
+    charge: String
+        If 'neutral', limit the output only to neutrally charged species.
+        If 'ion', limit the output only to charged species.
+        Else, do not limit output.
+
+    Returns
+    -------
+    species: 1D string array
+        List of all species containing the required elements.
+
+    Examples
+    --------
+    >>> import chemcat.janaf as janaf
+    >>> # Get all sodium-bearing species:
+    >>> salts = janaf.find_species(['Na'])
+    >>> print(salts)
+    ['LiONa' 'Na2' 'Na2SO4' 'NaAlF4' 'NaBO2' '(NaBr)2' 'NaBr' '(NaCl)2' 'NaCl'
+     '(NaCN)2' 'NaCN' '(NaF)2' 'NaF' 'Na' 'NaH' 'NaO' '(NaOH)2' 'NaOH']
+    >>> # Get all species containing carbon and oxygen:
+    >>> carbon_oxydes = janaf.find_species('C O'.split())
+    >>> print(carbon_oxydes)
+    ['C2H4O' 'C2O' 'C3O2' 'CF3OF' 'CO2' 'COCl2' 'COClF' 'COCl' 'COF2' 'COF'
+     'CO' 'COS' 'Fe(CO)5' 'H2CO' 'HCOF' 'HCO' 'HNCO' 'NC101' 'Ni(CO)4']
+    >>> # Get all hydrogen-ion species:
+    >>> H_ions= janaf.find_species(['H'], charge='ion')
+    >>> print(H_ions)
+    ['AlOH-' 'AlOH+' 'BaOH+' 'BeH+' 'BeOH+' 'CaOH+' 'CH+' 'CsOH+' 'H2-' 'H2+'
+     'H3O+' 'HBO-' 'HBO+' 'HBS+' 'HCO+' 'HD-' 'HD+' 'H-' 'H+' 'KOH+' 'LiOH+'
+     'MgOH+' 'NaOH+' 'OH-' 'OH+' 'SiH+' 'SrOH+']
+    """
+    janaf_dict = {}
+    for line in open(f'{ROOT}chemcat/data/janaf_conversion.txt', 'r'):
+        species_name, janaf_name = line.split()
+        janaf_dict[species_name] = janaf_name
+
+    species = []
+    for molec, janaf_file in janaf_dict.items():
+        if state == 'gas' and '_' in molec:
+            continue
+
+        is_charged = '+' in molec or '-' in molec
+        if charge == 'neutral' and is_charged:
+            continue
+        elif charge == 'ion' and not is_charged:
+            continue
+
+        stoich = read_stoich(janaf_file=janaf_file)
+        if np.all(np.isin(elements, list(stoich.keys()))):
+            species.append(molec)
+    return np.array(species)
 
 
