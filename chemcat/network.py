@@ -4,10 +4,7 @@
 __all__ = [
     'Network',
     'thermo_eval',
-    'read_elemental',
-    'set_element_abundance',
     'thermochemical_equilibrium',
-    'write_file',
 ]
 
 import itertools
@@ -47,7 +44,7 @@ class Thermo_Prop():
             and hasattr(obj, 'e_ratio')
         )
         if has_all_attributes:
-            obj.element_rel_abundance = set_element_abundance(
+            obj.element_rel_abundance = u.set_element_abundance(
                 obj.elements,
                 obj._base_composition,
                 obj._base_dex_abundances,
@@ -198,7 +195,7 @@ class Network(object):
 
         self.element_file = \
             f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
-        base_data = read_elemental(self.element_file)
+        base_data = u.read_elemental(self.element_file)
         self._base_composition = base_data[0]
         self._base_dex_abundances = base_data[1]
 
@@ -207,7 +204,7 @@ class Network(object):
         self.e_scale = e_scale
         self.e_ratio = e_ratio
 
-        self.element_rel_abundance = set_element_abundance(
+        self.element_rel_abundance = u.set_element_abundance(
             self.elements,
             self._base_composition,
             self._base_dex_abundances,
@@ -267,7 +264,7 @@ class Network(object):
         )
 
         if savefile is not None:
-            write_file(
+            u.write_file(
                 savefile,
                 self.species, self.pressure, self.temperature,
                 self.vmr,
@@ -367,161 +364,6 @@ def thermo_eval(temperature, thermo_funcs):
     return thermo_prop
 
 
-def read_elemental(element_file):
-    """
-    Extract elemental abundances from a file (defaulted to a solar
-    elemental abundance file from Asplund et al. 2021).
-    Inputs
-    ------
-    element_file: String
-        Path to a file containing a list of elements (second column)
-        and their relative abundances in log10 scale relative to H=12.0
-        (third column).
-    Returns
-    -------
-    elements: 1D string array
-        The list of elements.
-    dex_abundances: 1D float array
-        The elemental abundances in dex units relative to H=12.0.
-    Examples
-    --------
-    >>> import chemcat as cat
-    >>> import chemcat.utils as u
-
-    >>> element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
-    >>> elements, dex = cat.read_elemental(element_file)
-    >>> for e in 'H He C N O'.split():
-    >>>     print(f'{e:2}:  {dex[elements==e][0]:6.3f}')
-    H :  12.000
-    He:  10.914
-    C :   8.460
-    N :   7.830
-    O :   8.690
-    """
-    elements, dex = np.loadtxt(
-        element_file, dtype=str, comments='#', usecols=(1,2), unpack=True)
-    dex_abundances = np.array(dex, float)
-    return elements, dex_abundances
-
-
-
-def set_element_abundance(
-        elements, base_composition, base_dex_abundances,
-        metallicity=0.0, e_abundances={}, e_scale={}, e_ratio={},
-    ):
-    """
-    Set an elemental composition by scaling metals and custom atomic species.
-
-    Parameters
-    ----------
-    elements: 1D string array
-        List of elements to return their abundances.
-    base_composition: 1D float array
-        List of all possible elements.
-    base_dex_abundances: 1D float iterable
-        The elemental base abundances in dex units relative to H=12.0.
-    metallicity: Float
-        Scaling factor for all elemental species except H and He.
-        Dex units relative to the sun (e.g., solar is metallicity=0.0,
-        10x solar is metallicity=1.0).
-    e_abundances: Dictionary of element-abundance pairs
-        Set custom elemental abundances.
-        The dict contains the name of the element and their custom
-        abundance in dex units relative to H=12.0.
-        These values (if any) override metallicity.
-    e_scale: Dictionary of element-scaling pairs
-        Set custom elemental abundances by scaling from its solar value.
-        The dict contains the name of the element and their custom
-        scaling factor in dex units, e.g., for 2x solar carbon set
-        e_scale = {'C': np.log10(2.0)}.
-        This argument modifies the abundances on top of any custom
-        metallicity and e_abundances.
-    e_ratio: Dictionary of element-ratio pairs
-        Set custom elemental abundances by scaling relative to another
-        element.
-        The dict contains the pair of elements joined by an underscore
-        and their ratio in dex units, e.g., for a C/O ratio of 0.8 set
-        e_ratio = {'C_O': np.log10(0.8)}.
-        These values scale on top of any custom metallicity,
-        e_abundances, and e_scale.
-
-    Returns
-    -------
-    elemental_abundances: 1D float array
-        Elemental volume mixing ratios relative to H=1.0.
-
-    Examples
-    --------
-    >>> import chemcat as cat
-    >>> import chemcat.utils as u
-    >>> element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
-    >>> sun_elements, sun_dex = cat.read_elemental(element_file)
-    >>> elements = 'H He C N O'.split()
-
-    >>> solar = cat.set_element_abundance(
-    >>>     elements, sun_elements, sun_dex,
-    >>> )
-
-    >>> # Set custom metallicity to [M/H] = 0.5:
-    >>> abund = cat.set_element_abundance(
-    >>>     elements, sun_elements, sun_dex, metallicity=0.5,
-    >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 9.1e-04', 'N: 2.1e-04', 'O: 1.5e-03']
-
-    >>> # Custom carbon abundance by direct value (dex):
-    >>> abund = cat.set_element_abundance(
-    >>>     elements, sun_elements, sun_dex, e_abundances={'C': 8.8},
-    >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 6.3e-04', 'N: 6.8e-05', 'O: 4.9e-04']
-
-    >>> # Custom carbon abundance by scaling to 2x its solar value:
-    >>> abund = cat.set_element_abundance(
-    >>>     elements, sun_elements, sun_dex, e_scale={'C': np.log10(2)},
-    >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 5.8e-04', 'N: 6.8e-05', 'O: 4.9e-04']
-
-    >>> # Custom carbon abundance by scaling to C/O = 0.8:
-    >>> abund = cat.set_element_abundance(
-    >>>     elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.8)},
-    >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 3.9e-04', 'N: 6.8e-05', 'O: 4.9e-04']
-    """
-    nelements = len(elements)
-    elemental_abundances = np.zeros(nelements)
-    for j in range(nelements):
-        if elements[j] == 'e':
-            continue
-        idx = list(base_composition).index(elements[j])
-        elemental_abundances[j] = base_dex_abundances[idx]
-
-    # Scale the metals' abundances:
-    imetals = np.isin(elements, 'H He D'.split(), invert=True)
-    elemental_abundances[imetals] += metallicity
-    # Set custom elemental abundances:
-    for element, abundance in e_abundances.items():
-        elemental_abundances[np.array(elements) == element] = abundance
-
-    # Scale custom elemental abundances (additive to metallicity):
-    for element, fscale in e_scale.items():
-        elemental_abundances[np.array(elements) == element] += fscale
-
-    # Set custom elemental ratios:
-    for element, log_ratio in e_ratio.items():
-        element1, element2 = element.split('_')
-        idx1 = np.array(elements) == element1
-        idx2 = np.array(elements) == element2
-        elemental_abundances[idx1] = elemental_abundances[idx2] + log_ratio
-
-    # Convert elemental log VMR (relative to H=12.0) to VMR (rel. to H=1.0):
-    elemental_abundances = 10**(elemental_abundances-12.0)
-    elemental_abundances[np.array(elements) == 'e'] = 0.0
-    return elemental_abundances
-
-
 def thermochemical_equilibrium(
         pressure, temperature, element_rel_abundance, stoich_vals,
         gibbs_funcs,
@@ -604,62 +446,4 @@ def thermochemical_equilibrium(
     return vmr
 
 
-def write_file(file, species, pressure, temperature, vmr):
-    """
-    Write results to file.
-
-    Parameters
-    ----------
-    file: String
-        Output file name.
-    species: 1D string iterable
-        Names of atmospheric species.
-    pressure: 1D float iterable
-        Atmospheric pressure profile (bar).
-    temperature: 1D float iterable
-        Atmospheric temperature profile (kelvin).
-    vmr: 2D float iterable
-        Atmospheric volume mixing ratios (of shape [nlayers,nspecies]).
-
-    Examples
-    --------
-    >>> import chemcat as cat
-    >>> import numpy as np
-
-    >>> nlayers = 81
-    >>> temperature = np.tile(1200.0, nlayers)
-    >>> pressure = np.logspace(-8, 3, nlayers)
-    >>> molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
-    >>> net = cat.Network(pressure, temperature, molecules)
-    >>> vmr = net.thermochemical_equilibrium()
-    >>> cat.write_file(
-    >>>     'output_file.dat', net.species, pressure, temperature, vmr,
-    >>> )
-    """
-    fout = open(file, 'w+')
-
-    # Header info:
-    fout.write(
-        '# TEA output file with abundances calculated in '
-        'thermochemical equilibrium.\n'
-        '# Units: pressure (bar), temperature (K), abundance '
-        '(volume mixing ratio).\n\n')
-
-    # List of species:
-    fout.write('#SPECIES\n')
-    fout.write(' '.join(spec for spec in species))
-    fout.write('\n\n')
-
-    # Atmospheric data:
-    fout.write('#TEADATA\n')
-    fout.write('#Pressure   Temp     ')
-    fout.write(''.join(f'{spec:<11}' for spec in species) + '\n')
-
-    nlayers = len(pressure)
-    for i in range(nlayers):
-        fout.write(f'{pressure[i]:.4e}  {temperature[i]:7.2f} ')
-        for abund in vmr[i]:
-            fout.write(f'{abund:11.4e}')
-        fout.write('\n')
-    fout.close()
 

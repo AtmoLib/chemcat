@@ -1,10 +1,19 @@
 # Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
+import os
+
 import numpy as np
 import pytest
 
+import chemcat as cat
 import chemcat.utils as u
+
+from conftest import *
+
+
+# Ddefault values:
+element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
 
 
 def test_stoich_matrix_neutrals():
@@ -114,3 +123,101 @@ def test_resolve_sources_list_or_string(sources):
     source_names = u.resolve_sources(species, sources=['cea'])
     assert list(source_names) == ['cea', 'cea', None, 'cea']
 
+
+@pytest.mark.parametrize('sun',
+    [
+        'asplund_2009_solar_abundances.dat',
+        'asplund_2021_solar_abundances.dat',
+    ])
+def test_read_elemental(sun):
+    elements, dex = u.read_elemental(f'{u.ROOT}chemcat/data/{sun}')
+
+    expected_elements_asplund = (
+        'D   H   He  Li  Be  B   C   N   O   F   Ne  Na '
+        'Mg  Al  Si  P   S   Cl  Ar  K   Ca  Sc  Ti  V '
+        'Cr  Mn  Fe  Co  Ni  Cu  Zn  Ga  Ge  As  Se '
+        'Br  Kr  Rb  Sr  Y   Zr  Nb  Mo  Ru  Rh  Pd '
+        'Ag  Cd  In  Sn  Sb  Te  I   Xe  Cs  Ba  La '
+        'Ce  Pr  Nd  Sm  Eu  Gd  Tb  Dy  Ho  Er  Tm '
+        'Yb  Lu  Hf  Ta  W   Re  Os  Ir  Pt  Au  Hg '
+        'Tl  Pb  Bi  Th  U').split()
+    if '2009' in sun:
+        expected_dex_asplund = expected_dex_asplund_2009
+    elif '2021' in sun:
+        expected_dex_asplund = expected_dex_asplund_2021
+
+    assert len(elements) == 84
+    for element, expected_element in zip(elements, expected_elements_asplund):
+        assert element == expected_element
+    np.testing.assert_allclose(dex[dex>0], expected_dex_asplund)
+
+
+def test_set_element_abundance_solar():
+    sun_elements, sun_dex = u.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    e_abundances = u.set_element_abundance(
+        elements, sun_elements, sun_dex)
+    expected_abundance = np.array([
+        1.0, 8.20351544e-02, 2.88403150e-04, 6.76082975e-05, 4.89778819e-04,
+    ])
+    np.testing.assert_allclose(e_abundances, expected_abundance)
+
+def test_set_element_abundance_metallicity():
+    sun_elements, sun_dex = u.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    e_abundances = u.set_element_abundance(
+        elements, sun_elements, sun_dex, metallicity=0.5)
+    expected_abundance = np.array([
+        1.0, 8.20351544e-02, 9.12010839e-04, 2.13796209e-04, 1.54881662e-03,
+    ])
+    np.testing.assert_allclose(e_abundances, expected_abundance)
+
+
+def test_set_element_abundance_custom_element():
+    sun_elements, sun_dex = u.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    e_abundances = u.set_element_abundance(
+        elements, sun_elements, sun_dex, e_abundances={'C': 8.8})
+    expected_abundance = np.array([
+        1.0, 8.20351544e-02, 6.30957344e-04, 6.76082975e-05, 4.89778819e-04,
+    ])
+    np.testing.assert_allclose(e_abundances, expected_abundance)
+
+
+def test_set_element_abundance_custom_e_scale():
+    sun_elements, sun_dex = u.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    e_abundances = u.set_element_abundance(
+        elements, sun_elements, sun_dex, e_scale={'C': np.log10(3.0)})
+    expected_abundance = np.array([
+        1.0, 8.20351544e-02, 8.65209451e-04, 6.76082975e-05, 4.89778819e-04,
+    ])
+    np.testing.assert_allclose(e_abundances, expected_abundance)
+
+
+def test_set_element_abundance_custom_e_ratio():
+    sun_elements, sun_dex = u.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    e_abundances = u.set_element_abundance(
+        elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.6)})
+    expected_abundance = np.array([
+        1.0, 8.20351544e-02, 2.93867292e-04, 6.76082975e-05, 4.89778819e-04
+    ])
+    np.testing.assert_allclose(e_abundances, expected_abundance)
+
+
+def test_write_file(tmpdir):
+    atm_file = "atmfile.dat"
+    atm = f'{tmpdir}/{atm_file}'
+
+    # Some default values:
+    nlayers = 11
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+
+    net = cat.Network(pressure, temperature, molecules)
+    vmr = net.thermochemical_equilibrium()
+    u.write_file(atm, net.species, pressure, temperature, vmr)
+    assert atm_file in os.listdir(str(tmpdir))
+    # TBD: Open file and check values
