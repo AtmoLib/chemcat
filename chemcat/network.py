@@ -1,9 +1,11 @@
-# Copyright (c) 2022 Cubillos and Blecic
+# Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
     # Constants:
     'ROOT',
+    # Objects:
+    'Network',
     # Functions:
     'setup_janaf_network',
     'get_janaf_names',
@@ -24,13 +26,69 @@ import scipy.constants as sc
 ROOT = str(Path(__file__).parents[1]) + os.path.sep
 
 
+class Network(object):
+    r"""
+    A chemcat chemical network object.
+
+    Examples
+    --------
+    >>> import chemcat as cat
+    >>> import numpy as np
+
+    >>> nlayers = 81
+    >>> temperature = np.tile(1200.0, nlayers)
+    >>> pressure = np.logspace(-8, 3, nlayers)
+    >>> HCNO_molecules = (
+    >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O').split()
+    >>> net = cat.Network(pressure, temperature, HCNO_molecules)
+
+    >>> # Compute heat capacity at current temperature profile:
+    >>> cp = net.heat_capacity()
+    >>> print(f'Heat capacity (cp/R):\n{cp[0]}')
+    Heat capacity (cp/R):
+    [5.26408044 9.48143057 4.11030773 6.77638503 7.34238673 4.05594463
+     3.72748083 6.3275286  3.79892261 2.49998117 2.49998117 2.50082308
+     2.49998117 2.51092596]
+
+    >>> # Compute heat capacity at updated temperature profile:
+    >>> temp2 = np.tile(700.0, nlayers)
+    >>> cp2 = net.heat_capacity(temp2)
+    >>> print(
+    >>>     f'Temperature: {net.temperature[0]} K\n'
+    >>>     f'Heat capacity (cp/R):\n{cp2[0]}')
+    Temperature: 700.0 K
+    Heat capacity (cp/R):
+    [4.50961195 6.95102049 3.74900958 5.96117901 5.81564946 3.69885601
+     3.5409384  5.4895911  3.56763887 2.49998117 2.49998117 2.50106362
+     2.49998117 2.53053035]
+    """
+    def __init__(self, pressure, temperature, input_species, source='janaf'):
+        self.pressure = pressure
+        self.temperature = temperature
+        self.input_species = input_species
+
+        if source == 'janaf':
+            network_data = setup_janaf_network(input_species)
+        self.species = network_data[0]
+        self.elements = network_data[1]
+        self._cp_splines = network_data[2]
+        self.stoich_vals = network_data[3]
+
+    def heat_capacity(self, temperature=None):
+        if temperature is not None:
+            self.temperature = temperature
+        return heat_capacity(self.temperature, self._cp_splines)
+
+
 def setup_janaf_network(input_species):
     r"""
     Extract JANAF thermal data for a requested chemical network.
+
     Parameters
     ----------
     species: 1D string iterable
         Species to search in the JANAF data base.
+
     Returns
     -------
     species: 1D string array
@@ -43,6 +101,7 @@ def setup_janaf_network(input_species):
         Array containing the stoichiometric values for the
         requested species sorted according to the species and elements
         arrays.
+
     Examples
     --------
     >>> import chemcat as cat
@@ -284,18 +343,21 @@ def heat_capacity(temperature, cp_splines):
     r"""
     Compute the heat capacity for the input chemical network at the
     requested temperature(s).
+
     Parameters
     ----------
     temperature: float or 1D float iterable
         Temperature (Kelvin).
     cp_splines: 1D iterable of heat-capacity numpy splines
         Numpy splines containing heat capacity info for species.
+
     Returns
     -------
     cp: 1D or 2D float ndarray
         The heat capacity (divided by the universal gas constant, R) for
         each species at the requested temperature(s).
         The shape of the output depends on the shape of the temperature input.
+
     Examples
     --------
     >>> import chemcat as cat

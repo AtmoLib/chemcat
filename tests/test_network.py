@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Cubillos and Blecic
+# Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 import os
@@ -278,4 +278,33 @@ def test_heat_capacity_temp_array():
         [ 7.03677468, 12.5910723 ,  4.55014374,  2.71141997,  2.49998117],
         [ 7.07045094, 12.62522965,  4.55868307,  2.72440939,  2.49998117]])
     np.testing.assert_allclose(cp, expected_cp)
+
+
+def test_network_cp():
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    HCNO_molecules = (
+        'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O').split()
+    net = cat.Network(pressure, temperature, HCNO_molecules)
+
+    cp1 = net.heat_capacity()
+    temp2 = np.tile(700.0, nlayers)
+    cp2 = net.heat_capacity(temp2)
+
+    expected_cp1 = np.array([
+        5.26408044, 9.48143057, 4.11030773, 6.77638503, 7.34238673,
+        4.05594463, 3.72748083, 6.3275286 , 3.79892261, 2.49998117,
+        2.49998117, 2.50082308, 2.49998117, 2.51092596,
+    ])
+    expected_cp2 = np.array([
+        4.50961195, 6.95102049, 3.74900958, 5.96117901, 5.81564946,
+        3.69885601, 3.5409384 , 5.4895911 , 3.56763887, 2.49998117,
+        2.49998117, 2.50106362, 2.49998117, 2.53053035,
+    ])
+
+    assert np.shape(cp1) == (nlayers, len(net.species))
+    np.testing.assert_allclose(cp1[0], expected_cp1)
+    np.testing.assert_allclose(cp2[0], expected_cp2)
+    np.testing.assert_equal(net.temperature, temp2)
 
