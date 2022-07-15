@@ -10,6 +10,7 @@ __all__ = [
     'thermochemical_equilibrium',
 ]
 
+import itertools
 import os
 from pathlib import Path
 import sys
@@ -38,7 +39,6 @@ class Thermo_Prop():
         return value
 
     def __set__(self, obj, value):
-        print(f'Updating {self.private_name[1:]} to {value}')
         setattr(obj, self.private_name, value)
         if hasattr(obj, 'metallicity') and hasattr(obj, 'e_abundances'):
             obj.element_rel_abundance = set_element_abundance(
@@ -100,8 +100,6 @@ class Network(object):
         self.pressure = pressure
         self.temperature = temperature
         self.input_species = input_species
-        self.metallicity = metallicity
-        self.e_abundances = e_abundances
 
         if source == 'janaf':
             network_data = janaf.setup_network(input_species)
@@ -115,6 +113,9 @@ class Network(object):
         base_data = read_elemental(self.element_file)
         self._base_composition = base_data[0]
         self._base_dex_abundances = base_data[1]
+
+        self.metallicity = metallicity
+        self.e_abundances = e_abundances
 
         self.element_rel_abundance = set_element_abundance(
             self.elements,
@@ -498,27 +499,17 @@ def thermochemical_equilibrium(
     dlnns = np.zeros(nspecies)
     tolx = tolf = 2.22e-16
 
-    # Thermochemical equilibrium abundances for the grid of points
-    for i in range(nlayers):
-        abundances[abundances <= 0] = np.copy(max_abundances[abundances <= 0])
+    # Compute thermochemical equilibrium abundances at each layer:
+    # (Go down the layers and then sweep back in case the first run
+    # didn't get the global min.)
+    for i in itertools.chain(range(nlayers), reversed(range(nlayers))):
+        abundances[abundances <= 0] = 1e-300
         exit_status = nr.gibbs_energy_minimizer(
             nspecies, nequations, stoich_vals, b0,
             temperature[i], h_ts[i], pilag,
             abundances, max_abundances, total_abundance,
             mu, x, dlnns, tolx, tolf)
 
-        if exit_status == 1:
-            print(f"Gibbs minimization failed at layer {i}")
-        vmr[:,i] = abundances / np.sum(abundances[~electron_index])
-
-    # Sweep back calculations (in case first run didn't get the global min.)
-    for i in reversed(range(nlayers)):
-        abundances[abundances <= 0] = np.copy(max_abundances[abundances <= 0])
-        exit_status = nr.gibbs_energy_minimizer(
-            nspecies, nequations, stoich_vals, b0,
-            temperature[i], h_ts[i], pilag,
-            abundances, max_abundances, total_abundance,
-            mu, x, dlnns, tolx, tolf)
         if exit_status == 1:
             print(f"Gibbs minimization failed at layer {i}")
         vmr[:,i] = abundances / np.sum(abundances[~electron_index])
