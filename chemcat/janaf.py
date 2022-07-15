@@ -261,11 +261,25 @@ def setup_network(input_species):
     >>> import chemcat.janaf as janaf
 
     >>> molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
-    >>> species, elements, cp_funcs, gibbs_funcs, stoich_vals = \
+    >>> species, cp_funcs, gibbs_funcs, stoich_data = \
     >>>     janaf.setup_network(molecules)
 
     >>> for spec, stoich in zip(species, stoich_data):
     >>>     print(f'{spec:3s}:  {stoich}')
+    H2O:  {'H': 2.0, 'O': 1.0}
+    CH4:  {'C': 1.0, 'H': 4.0}
+    CO :  {'C': 1.0, 'O': 1.0}
+    CO2:  {'C': 1.0, 'O': 2.0}
+    NH3:  {'H': 3.0, 'N': 1.0}
+    N2 :  {'N': 2.0}
+    H2 :  {'H': 2.0}
+    HCN:  {'C': 1.0, 'H': 1.0, 'N': 1.0}
+    OH :  {'H': 1.0, 'O': 1.0}
+    H  :  {'H': 1.0}
+    He :  {'He': 1.0}
+    C  :  {'C': 1.0}
+    N  :  {'N': 1.0}
+    O  :  {'O': 1.0}
     """
     # Find which species exists in data base:
     janaf_species = get_filenames(input_species)

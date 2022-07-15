@@ -2,6 +2,7 @@
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
+    'is_in',
     'read_thermo_build',
     'heat_func',
     'gibbs_func',
@@ -18,6 +19,51 @@ import numpy as np
 from .utils import ROOT
 sys.path.append(f'{ROOT}chemcat/lib')
 import _utils as u
+
+
+def is_in(species, thermo_file=None):
+    r"""
+    Element-wise check whether species name exist in CEA database.
+    Parameters
+    ----------
+    species: 1D iterable of strings
+        Names of species to search in the database.
+    thermo_file: String
+        Optional ThermoBuild CEA database file path.
+    Returns
+    -------
+    in_database: 1D bool array
+        Flag whether each species is in the database.
+    Examples
+    --------
+    >>> import chemcat.cea as cea
+    >>> species = 'H2O (KOH)2 HO2 CO'.split()
+    >>> in_cea = cea.is_in(species)
+    >>> for spec, is_in in zip(species, in_cea):
+    >>>     print(f'{spec:6s}  {is_in}')
+    H2O     True
+    (KOH)2  False
+    HO2     True
+    CO      True
+    """
+    if thermo_file is None:
+        thermo_file = f'{ROOT}chemcat/data/thermo_build_cea.dat'
+
+    with open(thermo_file, 'r') as f:
+        lines = f.readlines()
+    nlines = len(lines)
+
+    all_species = []
+    i = 0
+    while i < nlines:
+        line = lines[i]
+        all_species.append(line[0:16].strip())
+        line = lines[i+1]
+        ndata_intervals = int(line[0:2])
+        i += 2 + 3*ndata_intervals
+
+    in_database = np.isin(species, all_species)
+    return in_database
 
 
 def read_thermo_build(species, thermo_file=None):

@@ -7,6 +7,13 @@ import pytest
 import chemcat.cea as cea
 
 
+
+def test_is_in():
+    species = 'H2O (KOH)2 HO2 CO'.split()
+    in_cea = cea.is_in(species)
+    np.testing.assert_equal(in_cea, np.array([True, False, True, True]))
+
+
 def test_read_thermo_build():
     species = ['H2O']
     cea_data = cea.read_thermo_build(species)
@@ -110,7 +117,6 @@ def test_setup_network_cea_neutrals():
     molecules = 'H2O CH4 CO2 H2 H He'.split()
     cea_data = cea.setup_network(molecules)
 
-    expected_elements = ['C', 'H', 'He', 'O']
     expected_stoich = [
         {'H': 2.0, 'O': 1.0},
         {'C': 1.0, 'H': 4.0},

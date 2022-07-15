@@ -6,6 +6,12 @@ import numpy as np
 import chemcat.janaf as janaf
 
 
+def test_is_in():
+    species = 'H2O (KOH)2 HO2 CO'.split()
+    in_janaf = janaf.is_in(species)
+    np.testing.assert_equal(in_janaf, np.array([True, True, False, True]))
+
+
 def test_get_janaf_filenames_single():
     janaf_species = janaf.get_filenames('H2O')
     assert len(janaf_species) == 1
