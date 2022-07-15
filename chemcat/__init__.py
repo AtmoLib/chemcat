@@ -4,11 +4,13 @@
 __all__ = [
     'cea',
     'janaf',
+    'utils',
 ]
 
 from .network import *
 from . import cea
 from . import janaf
+from . import utils
 from .version import __version__
 
 __all__ += (

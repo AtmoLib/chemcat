@@ -1,0 +1,24 @@
+# JANAF   CEA               Any others
+(AlO)2    Al2O2
+(CN)2     C2N2
+(KCN)2    K2C2N2
+(KOH)2    K2O2H2
+(NaOH)2   Na2O2H2
+C2H2      C2H2,acetylene
+C2H4O     C2H4O,ethylen-o
+C2N       CNC
+DNND      N2D2,cis           N2D2
+CH2O      HCHO,formaldehy    H2CO    HCHO
+HNNH      N2H2
+HONO2     HNO3
+HOO       HO2
+HOOH      H2O2
+HS        SH
+NC101     NCO
+NS        SN
+O2S(OH)2  H2SO4
+OAlH      HAlO
+OAlOH     HAlO2
+ONO-      NO2-
+SSO       S2O
+None      C4H2,butadiyne    C4H2

@@ -213,8 +213,8 @@ def gibbs_func(a_coeffs, b_coeffs, t_coeffs):
 
 
 def setup_network(input_species):
-    """
-    Extract CEA thermal data for a requested chemical network.
+    r"""
+    Extract CEA thermal data for a requested chemical system.
 
     Parameters
     ----------
