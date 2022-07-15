@@ -58,11 +58,16 @@ class Network(object):
      2.49998117 2.53053035]
     """
     def __init__(
-        self, pressure, temperature, input_species, source='janaf',
+        self, pressure, temperature, input_species,
+        metallicity=0.0,
+        e_abundances={},
+        source='janaf',
     ):
         self.pressure = pressure
         self.temperature = temperature
         self.input_species = input_species
+        self.metallicity = metallicity
+        self.e_abundances = e_abundances
 
         if source == 'janaf':
             network_data = janaf.setup_network(input_species)
@@ -81,6 +86,8 @@ class Network(object):
             self.elements,
             self._base_composition,
             self._base_dex_abundances,
+            self.metallicity,
+            self.e_abundances,
         )
 
 
