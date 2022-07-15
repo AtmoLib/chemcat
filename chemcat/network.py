@@ -70,6 +70,18 @@ class Network(object):
         self.elements = network_data[1]
         self._heat_capacity = network_data[2]
         self._gibbs_free_energy = network_data[3]
+        self.stoich_vals = network_data[4]
+
+        self.element_file = f'{ROOT}chemcat/data/abundances.txt'
+        base_data = read_elemental(self.element_file)
+        self._base_composition = base_data[0]
+        self._base_dex_abundances = base_data[1]
+
+        self.element_rel_abundance = set_element_abundance(
+            self.elements,
+            self._base_composition,
+            self._base_dex_abundances,
+        )
 
 
     def heat_capacity(self, temperature=None):

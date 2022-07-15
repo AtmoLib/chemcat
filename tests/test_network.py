@@ -149,12 +149,15 @@ def test_network_init():
         [0, 1, 0],
         [1, 0, 0],
         [0, 0, 1]])
+    expected_element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
 
     np.testing.assert_equal(net.pressure, pressure)
     np.testing.assert_equal(net.temperature, temperature)
     np.testing.assert_equal(net.input_species, molecules)
     np.testing.assert_equal(net.species, molecules)
     np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
+    np.testing.assert_equal(net.element_file, expected_element_file)
 
 
 def test_network_cp_default_temp():
