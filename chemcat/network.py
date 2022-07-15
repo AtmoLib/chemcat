@@ -215,8 +215,11 @@ class Network(object):
 
     def thermochemical_equilibrium(
         self, temperature=None,
-        metallicity=None, e_abundances=None,
-        e_scale=None, e_ratio=None,
+        metallicity=None,
+        e_abundances=None,
+        e_scale=None,
+        e_ratio=None,
+        savefile=None,
     ):
         """
         Compute thermochemical-equilibrium abundances, updating the
@@ -245,6 +248,14 @@ class Network(object):
             self.stoich_vals,
             self._gibbs_free_energy,
         )
+
+        if savefile is not None:
+            write_file(
+                savefile,
+                self.species, self.pressure, self.temperature,
+                self.vmr,
+            )
+
         return self.vmr
 
 

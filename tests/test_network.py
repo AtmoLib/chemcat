@@ -288,6 +288,15 @@ def test_network_vmr_update_temp_error():
         net.thermochemical_equilibrium(bad_temp)
 
 
+def test_network_vmr_write_file(tmpdir):
+    atm_file = "network_atm_file.dat"
+    atm = f'{tmpdir}/{atm_file}'
+
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    vmr = net.thermochemical_equilibrium(savefile=atm)
+    assert atm_file in os.listdir(str(tmpdir))
+
+
 @pytest.mark.parametrize('sun',
     [
         'asplund_2009_solar_abundances.dat',
@@ -371,7 +380,7 @@ def test_set_element_abundance_custom_e_ratio():
 
 
 def test_write_file(tmpdir):
-    atm_file = "WASP-00b.atm"
+    atm_file = "atmfile.dat"
     atm = f'{tmpdir}/{atm_file}'
 
     net = cat.Network(net_pressure, net_temperature, net_molecules)
