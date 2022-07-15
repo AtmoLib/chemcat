@@ -2,10 +2,12 @@
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
+    'cea',
     'janaf',
 ]
 
 from .network import *
+from . import cea
 from . import janaf
 from .version import __version__
 
