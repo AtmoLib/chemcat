@@ -16,9 +16,6 @@ import numpy as np
 # Need to define ROOT before importing modules (co-dependency):
 ROOT = str(Path(__file__).parents[1]) + os.path.sep
 
-from . import janaf
-from . import cea
-
 
 def stoich_matrix(stoich_data):
     r"""
@@ -175,6 +172,10 @@ def resolve_sources(species, sources):
     ['cea' 'cea' 'janaf' 'cea']
     ['cea' 'cea' None 'cea']
     """
+    # Need to import here to avoid circular import error in Python 3.6:
+    from . import janaf
+    from . import cea
+
     if isinstance(sources, str):
         sources = [sources]
 

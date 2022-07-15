@@ -2,7 +2,6 @@
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 import os
-from pathlib import Path
 import sys
 
 import numpy as np
@@ -10,6 +9,8 @@ import pytest
 
 import chemcat as cat
 import chemcat.janaf as janaf
+import chemcat.utils as u
+
 from conftest import *
 
 
@@ -19,30 +20,13 @@ net_temperature = np.tile(1200.0, nlayers)
 net_pressure = np.logspace(-8, 3, nlayers)
 net_molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
 
-element_file = f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
-
-
-def test_setup_janaf_network_missing_species():
-    molecules = 'Ti Ti+ TiO TiO2 TiO+'.split()
-    janaf_data = janaf.setup_network(molecules)
-
-    expected_stoich_vals = np.array([
-        [ 0,  1,  0],
-        [ 0,  1, -1],
-        [ 1,  1,  0],
-        [ 2,  1,  0]
-    ])
-
-    assert len(janaf_data) == 5
-    np.testing.assert_equal(janaf_data[0], ['Ti', 'Ti+', 'TiO', 'TiO2'])
-    np.testing.assert_equal(janaf_data[1], ['O', 'Ti', 'e'])
-    np.testing.assert_equal(janaf_data[4], expected_stoich_vals)
+element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
 
 
 def test_thermo_eval_heat_capacity_single_temp():
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
     janaf_data = janaf.setup_network(molecules)
-    heat_capacity = janaf_data[2]
+    heat_capacity = janaf_data[1]
     temperature = 1500.0
     cp = cat.thermo_eval(temperature, heat_capacity)
 
@@ -56,7 +40,7 @@ def test_thermo_eval_heat_capacity_single_temp():
 def test_thermo_eval_heat_capacity_temp_array():
     molecules = 'H2O CH4 CO C He'.split()
     janaf_data = janaf.setup_network(molecules)
-    heat_capacity = janaf_data[2]
+    heat_capacity = janaf_data[1]
     temperatures = np.arange(100.0, 4501.0, 200.0)
     cp = cat.thermo_eval(temperatures, heat_capacity)
 
@@ -66,7 +50,7 @@ def test_thermo_eval_heat_capacity_temp_array():
 def test_thermo_eval_gibbs_free_energy_temp_array():
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
     janaf_data = janaf.setup_network(molecules)
-    gibbs_funcs = janaf_data[3]
+    gibbs_funcs = janaf_data[2]
     temperatures = np.arange(100.0, 4101.0, 500.0)
     gibbs = cat.thermo_eval(temperatures, gibbs_funcs)
 
@@ -90,8 +74,11 @@ def test_network_init():
         [1, 0, 0],
         [0, 0, 1]])
     expected_element_rel_abundance = [2.88403150e-04, 1.0, 4.89778819e-04]
+    expected_provenance = np.array([
+        'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf',
+    ])
     expected_element_file = \
-        f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
+        f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
 
     np.testing.assert_equal(net.pressure, pressure)
     np.testing.assert_equal(net.temperature, temperature)
@@ -104,10 +91,44 @@ def test_network_init():
 
     np.testing.assert_equal(net.species, molecules)
     np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.provenance, expected_provenance)
     np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
     np.testing.assert_allclose(
         net.element_rel_abundance, expected_element_rel_abundance,
     )
+
+
+def test_network_mixed_sources():
+    # At least three things are being checked here:
+    # - COOH only exists in cea,
+    # - H2O2 is named HOOH in janaf,
+    # - FeH is missing from both sources.
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = ['H2O', 'FeH', 'H2O2', 'COOH', 'H']
+    sources = 'janaf', 'cea'
+    net = cat.Network(
+        pressure, temperature, molecules, sources=sources,
+    )
+
+    expected_stoich_vals = np.array([
+        [0, 2, 1],
+        [0, 2, 2],
+        [1, 1, 2],
+        [0, 1, 0]])
+    expected_provenance = np.array(['janaf', 'janaf', 'cea', 'janaf'])
+    expected_species = ['H2O', 'H2O2', 'COOH', 'H']
+
+    np.testing.assert_equal(net.pressure, pressure)
+    np.testing.assert_equal(net.temperature, temperature)
+    np.testing.assert_equal(net.input_species, molecules)
+    assert net.metallicity == 0.0
+    assert net.e_abundances == {}
+    np.testing.assert_equal(net.species, expected_species)
+    np.testing.assert_equal(net.provenance, expected_provenance)
+    np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
 
 
 def test_network_cp_default_temp():
@@ -168,6 +189,28 @@ def test_network_gibbs_default_temp():
 
 def test_network_vmr_default():
     net = cat.Network(net_pressure, net_temperature, net_molecules)
+    vmr = net.thermochemical_equilibrium()
+
+    assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
+    np.testing.assert_allclose(vmr, expected_vmr_1200K)
+    np.testing.assert_allclose(net.vmr, expected_vmr_1200K)
+
+    expected_e_abundance = np.array(
+        [2.88403150e-04, 1.0, 8.20351544e-02, 6.76082975e-05, 4.89778819e-04]
+    )
+    np.testing.assert_allclose(net.element_rel_abundance, expected_e_abundance)
+
+    assert np.all(vmr>=0)
+    elem_fractions = np.sum(net.vmr[0]*net.stoich_vals.T, axis=1)
+    elem_fractions /= elem_fractions[net.elements == 'H']
+    np.testing.assert_allclose(elem_fractions, net.element_rel_abundance)
+
+
+def test_network_vmr_cea_priority():
+    net = cat.Network(
+        net_pressure, net_temperature, net_molecules,
+        sources=['cea', 'janaf']
+    )
     vmr = net.thermochemical_equilibrium()
 
     assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
@@ -303,7 +346,7 @@ def test_network_vmr_write_file(tmpdir):
         'asplund_2021_solar_abundances.dat',
     ])
 def test_read_elemental(sun):
-    elements, dex = cat.read_elemental(f'{cat.ROOT}chemcat/data/{sun}')
+    elements, dex = cat.read_elemental(f'{u.ROOT}chemcat/data/{sun}')
 
     expected_elements_asplund = (
         'D   H   He  Li  Be  B   C   N   O   F   Ne  Na '

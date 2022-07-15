@@ -2,7 +2,6 @@
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
-    'ROOT',
     'Network',
     'thermo_eval',
     'read_elemental',
@@ -12,18 +11,16 @@ __all__ = [
 ]
 
 import itertools
-import os
-from pathlib import Path
 import sys
 import warnings
 
 import numpy as np
 
 from . import janaf
+from . import cea
+from . import utils as u
 
-
-ROOT = str(Path(__file__).parents[1]) + os.path.sep
-sys.path.append(f'{ROOT}chemcat/lib')
+sys.path.append(f'{u.ROOT}chemcat/lib')
 import _thermo as nr
 
 
@@ -72,7 +69,7 @@ class Network(object):
         e_abundances={},
         e_scale={},
         e_ratio={},
-        source='janaf',
+        sources=['janaf', 'cea'],
     ):
         """
         Parameters
@@ -108,8 +105,9 @@ class Network(object):
             e_ratio = {'C_O': np.log10(0.8)}.
             These values modify the abundances on top of any custom
             metallicity, e_abundances, and e_scale.
-        source: String
-            Name of database where to get the thermochemical properties.
+        sources: List of strings
+            Name of databases where to get the thermochemical properties
+            (in order of priority).  Available options: 'janaf' or 'cea'.
 
         Examples
         --------
@@ -171,16 +169,35 @@ class Network(object):
         self.temperature = temperature
         self.input_species = input_species
 
-        if source == 'janaf':
-            network_data = janaf.setup_network(input_species)
-        self.species = network_data[0]
-        self.elements = network_data[1]
-        self._heat_capacity = network_data[2]
-        self._gibbs_free_energy = network_data[3]
-        self.stoich_vals = network_data[4]
+        dealiased_species = u.de_aliasing(input_species, sources)
+        source_names = u.resolve_sources(dealiased_species, sources)
+
+        idx_valid = source_names != None
+        self.provenance = source_names[idx_valid]
+        self.species = np.array(input_species)[idx_valid]
+
+        nspecies = len(self.species)
+        self._heat_capacity = np.zeros(nspecies, object)
+        self._gibbs_free_energy = np.zeros(nspecies, object)
+        stoich_data = np.tile(None, nspecies)
+
+        for source in np.unique(self.provenance):
+            if source == 'janaf':
+                setup_network = janaf.setup_network
+            if source == 'cea':
+                setup_network = cea.setup_network
+            species = np.array(dealiased_species)[source_names==source]
+            network_data = setup_network(species)
+
+            idx_db = self.provenance == source
+            self._heat_capacity[idx_db] = network_data[1]
+            self._gibbs_free_energy[idx_db] = network_data[2]
+            stoich_data[idx_db] = network_data[3]
+
+        self.elements, self.stoich_vals = u.stoich_matrix(stoich_data)
 
         self.element_file = \
-            f'{ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
+            f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
         base_data = read_elemental(self.element_file)
         self._base_composition = base_data[0]
         self._base_dex_abundances = base_data[1]
@@ -369,8 +386,9 @@ def read_elemental(element_file):
     Examples
     --------
     >>> import chemcat as cat
+    >>> import chemcat.utils as u
 
-    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
+    >>> element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
     >>> elements, dex = cat.read_elemental(element_file)
     >>> for e in 'H He C N O'.split():
     >>>     print(f'{e:2}:  {dex[elements==e][0]:6.3f}')
@@ -435,7 +453,8 @@ def set_element_abundance(
     Examples
     --------
     >>> import chemcat as cat
-    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
+    >>> import chemcat.utils as u
+    >>> element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
     >>> sun_elements, sun_dex = cat.read_elemental(element_file)
     >>> elements = 'H He C N O'.split()
 
@@ -585,13 +604,13 @@ def thermochemical_equilibrium(
     return vmr
 
 
-def write_file(tea_file, species, pressure, temperature, vmr):
+def write_file(file, species, pressure, temperature, vmr):
     """
     Write results to file.
 
     Parameters
     ----------
-    tea_file: String
+    file: String
         Output file name.
     species: 1D string iterable
         Names of atmospheric species.
@@ -617,7 +636,7 @@ def write_file(tea_file, species, pressure, temperature, vmr):
     >>>     'output_file.dat', net.species, pressure, temperature, vmr,
     >>> )
     """
-    fout = open(tea_file, 'w+')
+    fout = open(file, 'w+')
 
     # Header info:
     fout.write(
