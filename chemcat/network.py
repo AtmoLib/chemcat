@@ -59,45 +59,7 @@ class Thermo_Prop():
 
 
 class Network(object):
-    r"""
-    A chemcat chemical network object.
-
-    Examples
-    --------
-    >>> import chemcat as cat
-    >>> import numpy as np
-
-    >>> nlayers = 81
-    >>> temperature = np.tile(1200.0, nlayers)
-    >>> pressure = np.logspace(-8, 3, nlayers)
-    >>> HCNO_molecules = (
-    >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O').split()
-    >>> net = cat.Network(pressure, temperature, HCNO_molecules)
-
-    >>> # Compute abundances in thermochemical equilibrium:
-    >>> vmr = net.thermochemical_equilibrium()
-    >>> species = list(tea_net.species)
-
-    >>> # Compute heat capacity at current temperature profile:
-    >>> cp = net.heat_capacity()
-    >>> print(f'Heat capacity (cp/R):\n{cp[0]}')
-    Heat capacity (cp/R):
-    [5.26408044 9.48143057 4.11030773 6.77638503 7.34238673 4.05594463
-     3.72748083 6.3275286  3.79892261 2.49998117 2.49998117 2.50082308
-     2.49998117 2.51092596]
-
-    >>> # Compute heat capacity at updated temperature profile:
-    >>> temp2 = np.tile(700.0, nlayers)
-    >>> cp2 = net.heat_capacity(temp2)
-    >>> print(
-    >>>     f'Temperature: {net.temperature[0]} K\n'
-    >>>     f'Heat capacity (cp/R):\n{cp2[0]}')
-    Temperature: 700.0 K
-    Heat capacity (cp/R):
-    [4.50961195 6.95102049 3.74900958 5.96117901 5.81564946 3.69885601
-     3.5409384  5.4895911  3.56763887 2.49998117 2.49998117 2.50106362
-     2.49998117 2.53053035]
-    """
+    """A chemcat chemical network object."""
     metallicity = Thermo_Prop()
     e_abundances = Thermo_Prop()
     e_scale = Thermo_Prop()
@@ -111,6 +73,63 @@ class Network(object):
         e_ratio={},
         source='janaf',
     ):
+        """
+        Examples
+        --------
+        >>> import chemcat as cat
+        >>> import numpy as np
+
+        >>> nlayers = 81
+        >>> temperature = np.tile(1200.0, nlayers)
+        >>> pressure = np.logspace(-8, 3, nlayers)
+        >>> HCNO_molecules = (
+        >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O').split()
+        >>> net = cat.Network(pressure, temperature, HCNO_molecules)
+
+        >>> # Compute abundances in thermochemical equilibrium:
+        >>> vmr = net.thermochemical_equilibrium()
+        >>> species = list(net.species)
+
+        >>> cols = {
+        >>>     'H': 'blue',
+        >>>     'H2': 'deepskyblue',
+        >>>     'He': 'olive',
+        >>>     'H2O': 'navy',
+        >>>     'CH4': 'orange',
+        >>>     'CO': 'limegreen',
+        >>>     'CO2': 'red',
+        >>>     'NH3': 'magenta',
+        >>>     'HCN': '0.55',
+        >>>     'N2': 'gold',
+        >>>     'OH': 'steelblue',
+        >>>     'C': 'salmon',
+        >>>     'N': 'darkviolet',
+        >>>     'O': 'greenyellow',
+        >>> }
+
+        >>> plt.figure('Plotty McPlt dot plot', (8,4.5))
+        >>> plt.clf()
+        >>> plt.subplots_adjust(0.09, 0.12, 0.89, 0.94)
+        >>> ax = plt.subplot(111)
+        >>> for name in species:
+        >>>     plt.loglog(
+        >>>         vmr[:,species.index(name)], pressure,
+        >>>         label=name, lw=2.0, color=cols[name])
+        >>> plt.ylim(np.amax(pressure), np.amin(pressure))
+        >>> plt.xlim(1e-30, 2)
+        >>> plt.ylabel('Pressure (bar)', fontsize=12)
+        >>> plt.legend(loc=(1.01,0.01), fontsize=9.0)
+        >>> plt.xlabel('Volume mixing ratio', fontsize=12)
+        >>> plt.title(f'{temperature[0]} K', fontsize=12)
+
+        >>> # Compute heat capacity:
+        >>> cp = net.heat_capacity()
+        >>> print(f'Heat capacity (cp/R):\n{cp[0]}')
+        Heat capacity (cp/R):
+        [5.26408044 9.48143057 4.11030773 6.77638503 7.34238673 4.05594463
+         3.72748083 6.3275286  3.79892261 2.49998117 2.49998117 2.50082308
+         2.49998117 2.51092596]
+        """
         self.pressure = pressure
         self.temperature = temperature
         self.input_species = input_species
@@ -174,7 +193,7 @@ class Network(object):
 
 
 def thermo_eval(temperature, thermo_funcs):
-    """
+    r"""
     Compute the thermochemical property specified by thermo_func at
     at the requested temperature(s).  These can be, e.g., the
     heat_capacity or gibbs_free_energy functions returned by
@@ -232,7 +251,7 @@ def thermo_eval(temperature, thermo_funcs):
     >>> }
 
     >>> nspecies = len(species)
-    >>> plt.figure('Heat capacity', (6.5, 4.5))
+    >>> plt.figure('Heat capacity, Gibbs free energy', (8.5, 4.5))
     >>> plt.clf()
     >>> plt.subplot(121)
     >>> for j in range(nspecies):
@@ -256,18 +275,18 @@ def thermo_eval(temperature, thermo_funcs):
     temp = np.atleast_1d(temperature)
     ntemp = np.shape(temp)[0]
     nspecies = len(thermo_funcs)
-    thermo_prop= np.zeros((ntemp, nspecies))
+    thermo_prop = np.zeros((ntemp, nspecies))
     for j in range(nspecies):
         thermo_prop[:,j] = thermo_funcs[j](temp)
     if np.shape(temperature) == ():
-        return thermo_prop[0]
+        return np.squeeze(thermo_prop)
     return thermo_prop
 
 
 def read_elemental(element_file):
     """
     Extract elemental abundances from a file (defaulted to a solar
-    elemental abundance file from Asplund 2009).
+    elemental abundance file from Asplund et al. 2021).
     Inputs
     ------
     element_file: String
@@ -417,85 +436,6 @@ def set_element_abundance(
     return elemental_abundances
 
 
-def thermo_eval(temperature, thermo_func):
-    r"""
-    Compute the thermochemical property specified by thermo_func at
-    at the requested temperature(s).  These can be, e.g., the
-    heat_capacity or gibbs_free_energy functions returned by
-    setup_network().
-
-    Parameters
-    ----------
-    temperature: float or 1D float iterable
-        Temperature (Kelvin).
-    cp_splines: 1D iterable of heat-capacity numpy splines
-        Numpy splines containing heat capacity info for species.
-
-    Returns
-    -------
-    cp: 1D or 2D float ndarray
-        The heat capacity (divided by the universal gas constant, R) for
-        each species at the requested temperature(s).
-        The shape of the output depends on the shape of the temperature input.
-
-    Examples
-    --------
-    >>> import chemcat as cat
-    >>> import matplotlib.pyplot as plt
-    >>> import numpy as np
-
-    >>> molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
-    >>> janaf_data = janaf.setup_network(molecules)
-    >>> species = janaf_data[0]
-    >>> heat_funcs = janaf_data[2]
-
-    >>> temperature = 1500.0
-    >>> temperatures = np.arange(100.0, 4501.0, 10)
-    >>> cp1 = cat.thermo_eval(temperature, heat_funcs)
-    >>> cp2 = cat.thermo_eval(temperatures, heat_funcs)
-    >>> cols = {
-    >>>     'H': 'blue',
-    >>>     'H2': 'deepskyblue',
-    >>>     'He': 'olive',
-    >>>     'H2O': 'navy',
-    >>>     'CH4': 'orange',
-    >>>     'CO': 'limegreen',
-    >>>     'CO2': 'red',
-    >>>     'NH3': 'magenta',
-    >>>     'HCN': '0.55',
-    >>>     'N2': 'gold',
-    >>>     'OH': 'steelblue',
-    >>>     'C': 'salmon',
-    >>>     'N': 'darkviolet',
-    >>>     'O': 'greenyellow',
-    >>> }
-
-    >>> nspecies = len(species)
-    >>> plt.figure('heat capacity')
-    >>> plt.clf()
-    >>> for j in range(nspecies):
-    >>>     label = species[j]
-    >>>     plt.plot(temperatures, cp2[:,j], label=label, c=cols[label])
-    >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
-    >>> plt.plot(np.tile(temperature,nspecies), cp1, 'ob', ms=4, zorder=-1)
-    >>> plt.legend(loc=(1.01, 0.01), fontsize=8)
-    >>> plt.xlabel('Temperature (K)')
-    >>> plt.ylabel('Heat capacity / R')
-    >>> plt.tight_layout()
-    """
-    temp = np.atleast_1d(temperature)
-    ntemp = np.shape(temp)[0]
-    nspecies = len(thermo_func)
-
-    thermo_prop = np.zeros((ntemp, nspecies))
-    for j in range(nspecies):
-        thermo_prop[:,j] = thermo_func[j](temp)
-    if np.shape(temperature) == ():
-        return thermo_prop[0]
-    return thermo_prop
-
-
-
 def thermochemical_equilibrium(
         pressure, temperature, element_rel_abundance, stoich_vals,
         gibbs_funcs,
@@ -522,7 +462,7 @@ def thermochemical_equilibrium(
     -------
     vmr: 2D float array
         Species volume mixing ratios in thermochemical equilibrium
-        of shape [nspecies, nlayers].
+        of shape [nlayers, nspecies].
     """
     nlayers = len(pressure)
     nspecies, nelements = np.shape(stoich_vals)
@@ -554,12 +494,9 @@ def thermochemical_equilibrium(
     pilag = np.zeros(nelements)  # pi lagrange multiplier
     x = np.zeros(nequations)
 
-    vmr = np.zeros((nspecies, nlayers))
+    vmr = np.zeros((nlayers, nspecies))
     mu = np.zeros(nspecies)  # chemical potential/RT
-    h_ts = (
-        thermo_eval(temperature, gibbs_funcs)
-        + np.expand_dims(np.log(pressure), axis=1)
-    )
+    h_ts = thermo_eval(temperature, gibbs_funcs).T + np.log(pressure)
     dlnns = np.zeros(nspecies)
     tolx = tolf = 2.22e-16
 
@@ -570,13 +507,13 @@ def thermochemical_equilibrium(
         abundances[abundances <= 0] = 1e-300
         exit_status = nr.gibbs_energy_minimizer(
             nspecies, nequations, stoich_vals, b0,
-            temperature[i], h_ts[i], pilag,
+            temperature[i], h_ts[:,i], pilag,
             abundances, max_abundances, total_abundance,
             mu, x, dlnns, tolx, tolf)
 
         if exit_status == 1:
             print(f"Gibbs minimization failed at layer {i}")
-        vmr[:,i] = abundances / np.sum(abundances[~electron_index])
+        vmr[i] = abundances / np.sum(abundances[~electron_index])
 
     return vmr
 

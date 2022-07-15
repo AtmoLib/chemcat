@@ -38,6 +38,98 @@ expected_dex_asplund_2021 = np.array([
     1.1  ,  0.48 ,  0.93 ,  0.11 ,  0.85 ,  0.1  ,  0.85 ,  0.79 ,
     1.35 ,  0.91 ,  0.92 ,  1.95 ,  0.03 ])
 
+expected_vmr_1200K = np.array([
+       [3.45326436e-04, 3.65395656e-20, 4.94635978e-04, 1.45474668e-07,
+        1.16062671e-14, 5.79940469e-05, 8.56535735e-01, 1.65782682e-16,
+        6.08505289e-09, 1.82749748e-03, 1.40738660e-01, 3.03465124e-25,
+        3.19583868e-16, 1.28121276e-11],
+       [3.45557686e-04, 5.81581847e-18, 4.94960884e-04, 1.45460679e-07,
+        1.46474360e-13, 5.80321280e-05, 8.57754803e-01, 2.09219739e-15,
+        1.71492943e-09, 5.15425171e-04, 1.40831074e-01, 3.03893146e-25,
+        9.01005390e-17, 1.01693762e-12],
+       [3.45622917e-04, 9.22850884e-16, 4.95052539e-04, 1.45456761e-07,
+        1.84528276e-12, 5.80428696e-05, 8.58098696e-01, 2.63573904e-14,
+        4.83327142e-10, 1.45295668e-04, 1.40857144e-01, 3.04013891e-25,
+        2.53961322e-17, 8.07610960e-14],
+       [3.45641307e-04, 1.46311439e-13, 4.95078377e-04, 1.45455659e-07,
+        2.32352746e-11, 5.80458872e-05, 8.58195643e-01, 3.31884411e-13,
+        1.36219650e-10, 4.09521962e-05, 1.40864493e-01, 3.04047930e-25,
+        7.15778860e-18, 6.41469848e-15],
+       [3.45646517e-04, 2.31910058e-11, 4.95085633e-04, 1.45455352e-07,
+        2.92530554e-10, 5.80466042e-05, 8.58222969e-01, 4.17840080e-12,
+        3.83918811e-11, 1.15420808e-05, 1.40866565e-01, 3.04057484e-25,
+        2.01735138e-18, 5.09529069e-16],
+       [3.45651682e-04, 3.67555846e-09, 4.95083990e-04, 1.45455739e-07,
+        3.68274412e-09, 5.80451261e-05, 8.58230663e-01, 5.26020266e-11,
+        1.08204154e-11, 3.25301494e-06, 1.40867150e-01, 3.04054657e-25,
+        5.68559631e-19, 4.04735745e-17],
+       [3.46230255e-04, 5.80888687e-07, 4.94507267e-04, 1.45529249e-07,
+        4.63545270e-08, 5.80236237e-05, 8.58232065e-01, 6.60222833e-10,
+        3.05470954e-12, 9.16824927e-07, 1.40867483e-01, 3.03193457e-25,
+        1.60212193e-19, 3.22030639e-18],
+       [4.12584149e-04, 6.68879327e-05, 4.28256395e-04, 1.50200689e-07,
+        5.82159354e-07, 5.77607869e-05, 8.58147227e-01, 6.02592776e-09,
+        1.02598004e-12, 2.58383601e-07, 1.40886287e-01, 2.20323360e-25,
+        4.50515452e-20, 3.04851019e-19],
+       [8.05463713e-04, 4.59371258e-04, 3.62931535e-05, 2.48647063e-08,
+        7.11546329e-06, 5.45414987e-05, 8.57639318e-01, 3.19722081e-09,
+        5.64678058e-13, 7.28008392e-08, 1.40997796e-01, 9.55852395e-27,
+        1.23383383e-20, 4.73018593e-20],
+       [8.41655603e-04, 4.95497252e-04, 2.58175601e-07, 1.84843339e-10,
+        6.27216583e-05, 2.67473271e-05, 8.57557289e-01, 1.91862029e-10,
+        1.66306844e-13, 2.05170830e-08, 1.41015811e-01, 6.50655859e-29,
+        2.43519271e-21, 3.92652341e-21],
+       [8.41957038e-04, 4.95780387e-04, 1.63068618e-09, 1.16797005e-12,
+        1.15086139e-04, 5.68254588e-07, 8.57523333e-01, 2.22276834e-12,
+        4.68893522e-14, 5.78238518e-09, 1.41023268e-01, 4.10803211e-31,
+        1.00037912e-22, 3.12018899e-22],
+])
+expected_vmr_2900K = np.array([
+       [5.90659151e-16, 7.03878906e-33, 2.19547811e-04, 2.84201394e-14,
+        3.36563349e-26, 7.30027802e-07, 6.44002149e-07, 2.83136249e-15,
+        2.65565082e-10, 9.23665276e-01, 7.57731293e-02, 4.68405356e-05,
+        6.09874683e-05, 2.32844242e-04],
+       [7.69538698e-14, 2.03165903e-29, 2.61021274e-04, 3.49649831e-13,
+        5.51322288e-23, 6.19323058e-06, 8.10812656e-06, 4.23240743e-14,
+        2.74819723e-09, 9.23700585e-01, 7.57772507e-02, 5.38156166e-06,
+        5.00644593e-05, 1.91392903e-04],
+       [1.18790929e-11, 4.23877765e-26, 2.65985414e-04, 4.36966170e-12,
+        5.41497035e-20, 1.89032990e-05, 1.02056520e-04, 2.74414529e-13,
+        3.37008298e-08, 9.23615765e-01, 7.57857091e-02, 4.47154555e-07,
+        2.46512932e-05, 1.86448291e-04],
+       [1.87172027e-09, 8.46075302e-23, 2.66713342e-04, 5.49894479e-11,
+        3.63146053e-17, 2.71062206e-05, 1.28130877e-03, 1.17117448e-12,
+        4.22368711e-07, 9.22354473e-01, 7.58757513e-02, 3.57272802e-08,
+        8.31965638e-06, 1.85867317e-04],
+       [2.83134690e-07, 1.62177578e-19, 2.70561380e-04, 6.93236794e-10,
+        2.05845584e-14, 3.04702874e-05, 1.55964140e-02, 4.45195486e-12,
+        5.16129163e-06, 9.06949982e-01, 7.69611602e-02, 2.91635129e-09,
+        2.48604612e-06, 1.83478091e-04],
+       [2.54066417e-05, 2.42566288e-16, 3.04228718e-04, 7.68806506e-09,
+        7.65272168e-12, 3.52830298e-05, 1.41898528e-01, 2.07398370e-11,
+        4.32748938e-05, 7.71009811e-01, 8.65389628e-02, 3.32485871e-10,
+        7.53969611e-07, 1.43742520e-04],
+       [1.98608997e-04, 2.55392507e-13, 3.95709395e-04, 2.28714548e-08,
+        6.97064427e-10, 4.62622406e-05, 4.84985731e-01, 3.14330728e-10,
+        5.15717812e-05, 4.01731087e-01, 1.12564647e-01, 1.89081380e-10,
+        2.43323602e-07, 2.61147481e-05],
+       [3.01665652e-04, 1.05500874e-10, 4.60816745e-04, 2.69049159e-08,
+        1.74759034e-08, 5.39681006e-05, 7.29239103e-01, 6.04196910e-09,
+        1.80039825e-05, 1.38837228e-01, 1.31086994e-01, 2.17979020e-10,
+        7.40695101e-08, 2.09542345e-06],
+       [3.33253114e-04, 2.26150916e-08, 4.84821165e-04, 2.78198126e-08,
+        2.68629508e-07, 5.66536594e-05, 8.19688906e-01, 8.84499410e-08,
+        5.28721998e-06, 4.14854197e-02, 1.37945066e-01, 2.33345146e-10,
+        2.13887246e-08, 1.63584082e-07],
+       [3.47110276e-04, 3.81884141e-06, 4.87332669e-04, 2.81814858e-08,
+        3.51339228e-06, 5.53848839e-05, 8.47181730e-01, 1.11640346e-06,
+        1.52671114e-06, 1.18866438e-02, 1.40031776e-01, 2.32743197e-10,
+        5.96027819e-09, 1.30950383e-08],
+       [5.64389401e-04, 2.15671788e-04, 2.74870970e-04, 2.56146662e-08,
+        3.68874143e-05, 3.74994283e-05, 8.54803902e-01, 4.06597512e-06,
+        6.96503486e-07, 3.36514829e-03, 1.40696840e-01, 8.14627154e-11,
+        1.38223928e-09, 1.67620927e-09],
+])
 
 def test_setup_janaf_network_missing_species():
     molecules = 'Ti Ti+ TiO TiO2 TiO+'.split()
@@ -56,7 +148,7 @@ def test_setup_janaf_network_missing_species():
     np.testing.assert_equal(janaf_data[4], expected_stoich_vals)
 
 
-def test_heat_capacity_single_temp():
+def test_thermo_eval_heat_capacity_single_temp():
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
     janaf_data = janaf.setup_network(molecules)
     heat_capacity = janaf_data[2]
@@ -70,7 +162,7 @@ def test_heat_capacity_single_temp():
     np.testing.assert_allclose(cp, expected_cp)
 
 
-def test_heat_capacity_temp_array():
+def test_thermo_eval_heat_capacity_temp_array():
     molecules = 'H2O CH4 CO C He'.split()
     janaf_data = janaf.setup_network(molecules)
     heat_capacity = janaf_data[2]
@@ -104,7 +196,7 @@ def test_heat_capacity_temp_array():
     np.testing.assert_allclose(cp, expected_cp)
 
 
-def test_gibbs_free_energy_temp_array():
+def test_thermo_eval_gibbs_free_energy_temp_array():
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
     janaf_data = janaf.setup_network(molecules)
     gibbs_funcs = janaf_data[3]
@@ -202,6 +294,7 @@ def test_network_cp_default_temp():
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    nspecies = len(molecules)
     net = cat.Network(pressure, temperature, molecules)
     cp = net.heat_capacity()
 
@@ -209,7 +302,7 @@ def test_network_cp_default_temp():
         5.26408044, 9.48143057, 4.11030773, 6.77638503, 7.34238673,
         4.05594463, 3.72748083, 6.3275286 , 3.79892261, 2.49998117,
         2.49998117, 2.50082308, 2.49998117, 2.51092596])
-    assert np.shape(cp) == (nlayers, len(net.species))
+    assert np.shape(cp) == (nlayers, nspecies)
     np.testing.assert_allclose(cp[0], expected_cp)
 
 
@@ -218,6 +311,7 @@ def test_network_cp_input_temp():
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    nspecies = len(molecules)
     net = cat.Network(pressure, temperature, molecules)
 
     temps = [100.0, 600.0, 1200.0]
@@ -234,7 +328,7 @@ def test_network_cp_input_temp():
         4.05594463, 3.72748083, 6.3275286 , 3.79892261, 2.49998117,
         2.49998117, 2.50082308, 2.49998117, 2.51092596]])
 
-    assert np.shape(cp) == (len(temps), len(net.species))
+    assert np.shape(cp) == (len(temps), nspecies)
     np.testing.assert_allclose(cp, expected_cp)
     np.testing.assert_equal(net.temperature, temperature)
 
@@ -244,6 +338,7 @@ def test_network_gibbs_default_temp():
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    nspecies = len(molecules)
     net = cat.Network(pressure, temperature, molecules)
     gibbs = net.gibbs_free_energy()
 
@@ -252,8 +347,48 @@ def test_network_gibbs_default_temp():
         -31.08382889, -25.35365299, -17.97578591, -13.94856633,
         -20.48067821,   6.44982554, -16.77498672,  51.21052551,
          27.33544072,   3.95818325])
-    assert np.shape(gibbs) == (nlayers, len(net.species))
+
+    assert np.shape(gibbs) == (nlayers, nspecies)
     np.testing.assert_allclose(gibbs[0], expected_gibbs)
+    np.testing.assert_equal(net.temperature, temperature)
+
+
+def test_network_vmr_default():
+    nlayers = 11
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    nspecies = len(molecules)
+    net = cat.Network(pressure, temperature, molecules)
+    vmr = net.thermochemical_equilibrium()
+
+    assert np.shape(vmr) == (nlayers, nspecies)
+    np.testing.assert_allclose(vmr, expected_vmr_1200K)
+    np.testing.assert_allclose(net.vmr, expected_vmr_1200K)
+
+    assert np.all(vmr>=0)
+    elem_fractions = np.sum(net.vmr[0]*net.stoich_vals.T, axis=1)
+    elem_fractions /= elem_fractions[net.elements == 'H']
+    np.testing.assert_allclose(elem_fractions, net.element_rel_abundance)
+
+
+def test_network_vmr_update_temp():
+    nlayers = 11
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    nspecies = len(molecules)
+    net = cat.Network(pressure, temperature, molecules)
+
+    vmr = net.thermochemical_equilibrium()
+    assert np.shape(vmr) == (nlayers, nspecies)
+    np.testing.assert_allclose(vmr, expected_vmr_1200K)
+
+    thot = np.tile(2900.0, nlayers)
+    vmr = net.thermochemical_equilibrium(temperature=thot)
+    assert np.shape(vmr) == (nlayers, nspecies)
+    np.testing.assert_allclose(vmr, expected_vmr_2900K)
+    np.testing.assert_equal(net.temperature, thot)
 
 
 @pytest.mark.parametrize('sun',
