@@ -5,6 +5,7 @@ __all__ = [
     'ROOT',
     'Network',
     'thermo_eval',
+    'read_elemental',
 ]
 
 import os
@@ -82,7 +83,7 @@ class Network(object):
         return thermo_eval(temperature, self._gibbs_free_energy)
 
 
-def thermo_eval(temperature, thermo_func):
+def thermo_eval(temperature, thermo_funcs):
     """
     Compute the thermochemical property specified by thermo_func at
     at the requested temperature(s).  These can be, e.g., the
@@ -93,7 +94,7 @@ def thermo_eval(temperature, thermo_func):
     ----------
     temperature: float or 1D float iterable
         Temperature (Kelvin).
-    thermo_func: 1D iterable of callable functions
+    thermo_funcs: 1D iterable of callable functions
         Functions that return the thermochemical property.
 
     Returns
@@ -108,7 +109,6 @@ def thermo_eval(temperature, thermo_func):
     --------
     >>> # (First, make sure you added the path to the TEA package)
     >>> import chemcat as cat
-    >>> import chemcat.janaf as janaf
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
 
@@ -116,11 +116,14 @@ def thermo_eval(temperature, thermo_func):
     >>> janaf_data = janaf.setup_network(molecules)
     >>> species = janaf_data[0]
     >>> heat_funcs = janaf_data[2]
+    >>> gibbs_funcs = janaf_data[3]
 
     >>> temperature = 1500.0
     >>> temperatures = np.arange(100.0, 4501.0, 10)
     >>> cp1 = cat.thermo_eval(temperature, heat_funcs)
     >>> cp2 = cat.thermo_eval(temperatures, heat_funcs)
+    >>> gibbs = tea.thermo_eval(temperatures, gibbs_funcs)
+
     >>> cols = {
     >>>     'H': 'blue',
     >>>     'H2': 'deepskyblue',
@@ -141,7 +144,7 @@ def thermo_eval(temperature, thermo_func):
     >>> nspecies = len(species)
     >>> plt.figure('Heat capacity', (6.5, 4.5))
     >>> plt.clf()
-    >>> plt.subplot(111)
+    >>> plt.subplot(121)
     >>> for j in range(nspecies):
     >>>     label = species[j]
     >>>     plt.plot(temperatures, cp2[:,j], label=label, c=cols[label])
@@ -149,18 +152,62 @@ def thermo_eval(temperature, thermo_func):
     >>> plt.plot(np.tile(temperature,nspecies), cp1, 'ob', ms=4, zorder=-1)
     >>> plt.xlabel('Temperature (K)')
     >>> plt.ylabel('Heat capacity / R')
+
+    >>> plt.subplot(122)
+    >>> for j in range(nspecies):
+    >>>     label = species[j]
+    >>>     plt.plot(temperatures, gibbs[:,j], label=label, c=cols[label])
+    >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
     >>> plt.legend(loc=(1.01, 0.01), fontsize=8)
+    >>> plt.xlabel('Temperature (K)')
+    >>> plt.ylabel('Gibbs free energy / RT')
     >>> plt.tight_layout()
     """
     temp = np.atleast_1d(temperature)
     ntemp = np.shape(temp)[0]
-    nspecies = len(thermo_func)
+    nspecies = len(thermo_funcs)
     thermo_prop= np.zeros((ntemp, nspecies))
     for j in range(nspecies):
-        thermo_prop[:,j] = thermo_func[j](temp)
+        thermo_prop[:,j] = thermo_funcs[j](temp)
     if np.shape(temperature) == ():
         return thermo_prop[0]
     return thermo_prop
+
+
+def read_elemental(element_file):
+    """
+    Extract elemental abundances from a file (defaulted to a solar
+    elemental abundance file from Asplund).
+    Inputs
+    ------
+    element_file: String
+        Path to a file containing a list of elements (second column)
+        and their relative abundances in log10 scale relative to H=12.0
+        (third column).
+    Returns
+    -------
+    elements: 1D string array
+        The list of elements.
+    dex_abundances: 1D float array
+        The elemental abundances in dex units relative to H=12.0.
+    Examples
+    --------
+    >>> import chemcat as cat
+    >>> # Asplund et al. (2009) solar elemental composition:
+    >>> element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    >>> elements, dex = cat.read_elemental(element_file)
+    >>> for e in 'H He C N O'.split():
+    >>>     print(f'{e:2}:  {dex[elements==e][0]:6.3f}')
+    H :  12.000
+    He:  10.914
+    C :   8.460
+    N :   7.830
+    O :   8.690
+    """
+    elements, dex = np.loadtxt(
+        element_file, dtype=str, comments='#', usecols=(1,2), unpack=True)
+    dex_abundances = np.array(dex, float)
+    return elements, dex_abundances
 
 
 def thermo_eval(temperature, thermo_func):

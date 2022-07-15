@@ -215,3 +215,33 @@ def test_network_gibbs_default_temp():
     assert np.shape(gibbs) == (nlayers, len(net.species))
     np.testing.assert_allclose(gibbs[0], expected_gibbs)
 
+
+
+def test_read_elemental_asplund_2009():
+    element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    elements, dex = cat.read_elemental(element_file)
+
+    expected_elements_asplund = (
+        'D   H   He  Li  Be  B   C   N   O   F   Ne  Na '
+        'Mg  Al  Si  P   S   Cl  Ar  K   Ca  Sc  Ti  V '
+        'Cr  Mn  Fe  Co  Ni  Cu  Zn  Ga  Ge  As  Se '
+        'Br  Kr  Rb  Sr  Y   Zr  Nb  Mo  Ru  Rh  Pd '
+        'Ag  Cd  In  Sn  Sb  Te  I   Xe  Cs  Ba  La '
+        'Ce  Pr  Nd  Sm  Eu  Gd  Tb  Dy  Ho  Er  Tm '
+        'Yb  Lu  Hf  Ta  W   Re  Os  Ir  Pt  Au  Hg '
+        'Tl  Pb  Bi  Th  U').split()
+    expected_nonzero_dex_2009 = np.array([
+        7.3 , 12.  , 10.93,  1.05,  1.38,  2.7 ,  8.43,  7.83,  8.69,
+        4.56,  7.93,  6.24,  7.6 ,  6.45,  7.51,  5.41,  7.12,  5.5 ,
+        6.4 ,  5.03,  6.34,  3.15,  4.95,  3.93,  5.64,  5.43,  7.5 ,
+        4.99,  6.22,  4.19,  4.56,  3.04,  3.65,  3.25,  2.52,  2.87,
+        2.21,  2.58,  1.46,  1.88,  1.75,  0.91,  1.57,  0.94,  0.8 ,
+        2.04,  2.24,  2.18,  1.1 ,  1.58,  0.72,  1.42,  0.96,  0.52,
+        1.07,  0.3 ,  1.1 ,  0.48,  0.92,  0.1 ,  0.84,  0.1 ,  0.85,
+        0.85,  1.4 ,  1.38,  0.92,  0.9 ,  1.75,  0.02])
+
+    assert len(elements) == 84
+    for element, expected_element in zip(elements, expected_elements_asplund):
+        assert element == expected_element
+    np.testing.assert_allclose(dex[dex>0], expected_nonzero_dex_2009)
+
