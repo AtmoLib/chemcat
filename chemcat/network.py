@@ -28,6 +28,8 @@ import _thermo as nr
 
 class Thermo_Prop():
     """
+    Descriptor objects that automate setting the elemental abundances.
+
     To understand this sorcery see:
     https://docs.python.org/3/howto/descriptor.html
     """
@@ -40,11 +42,19 @@ class Thermo_Prop():
 
     def __set__(self, obj, value):
         setattr(obj, self.private_name, value)
-        if hasattr(obj, 'metallicity') and hasattr(obj, 'e_abundances'):
+        has_all_attributes = (
+            hasattr(obj, 'metallicity')
+            and hasattr(obj, 'e_abundances')
+            and hasattr(obj, 'e_scale')
+            and hasattr(obj, 'e_ratio')
+        )
+        if has_all_attributes:
             obj.element_rel_abundance = set_element_abundance(
                 obj.elements,
-                obj._base_composition, obj._base_dex_abundances,
+                obj._base_composition,
+                obj._base_dex_abundances,
                 obj.metallicity, obj.e_abundances,
+                obj.e_scale, obj.e_ratio,
             )
 
 
@@ -90,11 +100,15 @@ class Network(object):
     """
     metallicity = Thermo_Prop()
     e_abundances = Thermo_Prop()
+    e_scale = Thermo_Prop()
+    e_ratio = Thermo_Prop()
 
     def __init__(
         self, pressure, temperature, input_species,
         metallicity=0.0,
         e_abundances={},
+        e_scale={},
+        e_ratio={},
         source='janaf',
     ):
         self.pressure = pressure
@@ -116,6 +130,8 @@ class Network(object):
 
         self.metallicity = metallicity
         self.e_abundances = e_abundances
+        self.e_scale = e_scale
+        self.e_ratio = e_ratio
 
         self.element_rel_abundance = set_element_abundance(
             self.elements,
@@ -123,6 +139,8 @@ class Network(object):
             self._base_dex_abundances,
             self.metallicity,
             self.e_abundances,
+            self.e_scale,
+            self.e_ratio,
         )
 
 
@@ -178,8 +196,8 @@ def thermo_eval(temperature, thermo_funcs):
 
     Examples
     --------
-    >>> # (First, make sure you added the path to the TEA package)
     >>> import chemcat as cat
+    >>> import chemcat.janaf as janaf
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
 
@@ -229,7 +247,7 @@ def thermo_eval(temperature, thermo_funcs):
     >>>     label = species[j]
     >>>     plt.plot(temperatures, gibbs[:,j], label=label, c=cols[label])
     >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
-    >>> plt.legend(loc=(1.01, 0.01), fontsize=8)
+    >>> plt.legend(loc='upper right', fontsize=8)
     >>> plt.xlabel('Temperature (K)')
     >>> plt.ylabel('Gibbs free energy / RT')
     >>> plt.tight_layout()
@@ -284,7 +302,7 @@ def read_elemental(element_file):
 
 def set_element_abundance(
         elements, base_composition, base_dex_abundances,
-        metallicity=0.0, e_abundances={},
+        metallicity=0.0, e_abundances={}, e_scale={}, e_ratio={},
     ):
     """
     Set an elemental composition by scaling metals and custom atomic species.
@@ -322,15 +340,19 @@ def set_element_abundance(
             elements, sun_elements, sun_dex, metallicity=0.5)
     >>> carbon = cat.set_element_abundance(
             elements, sun_elements, sun_dex, e_abundances={'C': 8.8})
+    >>> scale = tea.set_element_abundance(
+            elements, sun_elements, sun_dex, e_scale={'C': 0.37})
+    >>> ratio = tea.set_element_abundance(
+            elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.8)})
     >>> for i in range(len(elements)):
     >>>     print(
-    >>>         f'{elements[i]:2}:  '
-    >>>         f'{solar[i]:.1e}  {heavy[i]:.1e}  {carbon[i]:.1e}')
-    H :  1.0e+00  1.0e+00  1.0e+00
-    He:  8.5e-02  8.5e-02  8.5e-02
-    C :  2.7e-04  8.5e-04  6.3e-04
-    N :  6.8e-05  2.1e-04  6.8e-05
-    O :  4.9e-04  1.5e-03  4.9e-04
+    >>>         f'{solar[i]:.1e}  {heavy[i]:.1e}  {carbon[i]:.1e}  '
+    >>>         f'{scale[i]:.1e}  {ratio[i]:.1e}')
+    H :  1.0e+00  1.0e+00  1.0e+00  1.0e+00  1.0e+00
+    He:  8.5e-02  8.5e-02  8.5e-02  8.5e-02  8.5e-02
+    C :  2.7e-04  8.5e-04  6.3e-04  6.3e-04  3.9e-04
+    N :  6.8e-05  2.1e-04  6.8e-05  6.8e-05  6.8e-05
+    O :  4.9e-04  1.5e-03  4.9e-04  4.9e-04  4.9e-04
     """
     nelements = len(elements)
     elemental_abundances = np.zeros(nelements)
@@ -347,9 +369,20 @@ def set_element_abundance(
     for element, abundance in e_abundances.items():
         elemental_abundances[np.array(elements) == element] = abundance
 
+    # Scale custom elemental abundances (additive to metallicity):
+    for element, fscale in e_scale.items():
+        elemental_abundances[np.array(elements) == element] += fscale
+
+    # Set custom elemental ratios:
+    for element, log_ratio in e_ratio.items():
+        element1, element2 = element.split('_')
+        idx1 = np.array(elements) == element1
+        idx2 = np.array(elements) == element2
+        elemental_abundances[idx1] = elemental_abundances[idx2] + log_ratio
+
     # Convert elemental log VMR (relative to H=12.0) to VMR (rel. to H=1.0):
     elemental_abundances = 10**(elemental_abundances-12.0)
-    elemental_abundances[elements == 'e'] = 0.0
+    elemental_abundances[np.array(elements) == 'e'] = 0.0
     return elemental_abundances
 
 
