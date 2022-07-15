@@ -7,10 +7,12 @@ __all__ = [
     'thermo_eval',
     'read_elemental',
     'set_element_abundance',
+    'thermochemical_equilibrium',
 ]
 
 import os
 from pathlib import Path
+import sys
 import warnings
 
 import numpy as np
@@ -19,6 +21,8 @@ from . import janaf
 
 
 ROOT = str(Path(__file__).parents[1]) + os.path.sep
+sys.path.append(f'{ROOT}chemcat/lib')
+import _thermo as nr
 
 
 class Network(object):
@@ -36,6 +40,10 @@ class Network(object):
     >>> HCNO_molecules = (
     >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O').split()
     >>> net = cat.Network(pressure, temperature, HCNO_molecules)
+
+    >>> # Compute abundances in thermochemical equilibrium:
+    >>> vmr = net.thermochemical_equilibrium()
+    >>> species = list(tea_net.species)
 
     >>> # Compute heat capacity at current temperature profile:
     >>> cp = net.heat_capacity()
@@ -101,6 +109,22 @@ class Network(object):
         if temperature is None:
             temperature = self.temperature
         return thermo_eval(temperature, self._gibbs_free_energy)
+
+
+    def thermochemical_equilibrium(
+        self, temperature=None, metallicity=None, e_abundances=None):
+        if temperature is not None:
+            self.temperature = temperature
+        if metallicity is not None:
+            self.metallicty = metallicity
+        if e_abundances is not None:
+            self.e_abundances = e_abundances
+
+        self.vmr = thermochemical_equilibrium(
+            self.pressure, self.temperature,
+            self.element_rel_abundance, self.stoich_vals,
+            self._gibbs_free_energy)
+        return self.vmr
 
 
 def thermo_eval(temperature, thermo_funcs):
@@ -378,3 +402,100 @@ def thermo_eval(temperature, thermo_func):
     if np.shape(temperature) == ():
         return thermo_prop[0]
     return thermo_prop
+
+
+
+def thermochemical_equilibrium(
+        pressure, temperature, element_rel_abundance, stoich_vals,
+        gibbs_funcs,
+    ):
+    """
+    Compute thermochemical equilibrium for the given chemical network
+    at the specified temperature--pressure profile.
+
+    Parameters
+    ----------
+    pressure: 1D float array
+        Pressure profile (bar).
+    temperature: 1D float array
+        Temperature profile (Kelvin).
+    element_rel_abundance: 1D float array
+        Elemental abundances (relative to H=1.0).
+    stoich_vals: 2D float array
+        Species stoichiometric values for CHON.
+    gibbs_funcs: 1D iterable of callable functions
+        Functions that return the Gibbs free energy (divided by RT)
+        for each species in the network.
+
+    Returns
+    -------
+    vmr: 2D float array
+        Species volume mixing ratios in thermochemical equilibrium
+        of shape [nspecies, nlayers].
+    """
+    nlayers = len(pressure)
+    nspecies, nelements = np.shape(stoich_vals)
+
+    # Target elemental fractions (and charge) for conservation:
+    b0 = element_rel_abundance / np.sum(element_rel_abundance)
+    # Total elemental abundance:
+    total_abundance = np.sum(b0)
+
+    is_atom = element_rel_abundance > 0.0
+    # Maximum abundance reachable by each species
+    # (i.e., species takes all available atoms)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        max_abundances = np.array([
+            np.nanmin((b0/is_atom)[stoich>0] / stoich[stoich>0])
+            for stoich in stoich_vals])
+
+    total_natoms = np.sum(stoich_vals*is_atom, axis=1)
+    electron_index = total_natoms == 0
+    max_abundances[electron_index] = total_abundance
+
+    # Initial guess for abundances of species, gets modified in-place
+    # with best-fit values by nr.gibbs_energy_minimizer()
+    abundances = np.copy(max_abundances)
+
+    # Number of conservation equations to solve with Newton-Raphson
+    nequations = nelements + 1
+    pilag = np.zeros(nelements)  # pi lagrange multiplier
+    x = np.zeros(nequations)
+
+    vmr = np.zeros((nspecies, nlayers))
+    mu = np.zeros(nspecies)  # chemical potential/RT
+    h_ts = (
+        thermo_eval(temperature, gibbs_funcs)
+        + np.expand_dims(np.log(pressure), axis=1)
+    )
+    dlnns = np.zeros(nspecies)
+    tolx = tolf = 2.22e-16
+
+    # Thermochemical equilibrium abundances for the grid of points
+    for i in range(nlayers):
+        abundances[abundances <= 0] = np.copy(max_abundances[abundances <= 0])
+        exit_status = nr.gibbs_energy_minimizer(
+            nspecies, nequations, stoich_vals, b0,
+            temperature[i], h_ts[i], pilag,
+            abundances, max_abundances, total_abundance,
+            mu, x, dlnns, tolx, tolf)
+
+        if exit_status == 1:
+            print(f"Gibbs minimization failed at layer {i}")
+        vmr[:,i] = abundances / np.sum(abundances[~electron_index])
+
+    # Sweep back calculations (in case first run didn't get the global min.)
+    for i in reversed(range(nlayers)):
+        abundances[abundances <= 0] = np.copy(max_abundances[abundances <= 0])
+        exit_status = nr.gibbs_energy_minimizer(
+            nspecies, nequations, stoich_vals, b0,
+            temperature[i], h_ts[i], pilag,
+            abundances, max_abundances, total_abundance,
+            mu, x, dlnns, tolx, tolf)
+        if exit_status == 1:
+            print(f"Gibbs minimization failed at layer {i}")
+        vmr[:,i] = abundances / np.sum(abundances[~electron_index])
+
+    return vmr
+
