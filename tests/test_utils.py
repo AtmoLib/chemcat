@@ -55,18 +55,39 @@ def test_stoich_matrix_ions():
     np.testing.assert_equal(stoich_matrix, expected_stoich)
 
 
-def test_de_aliasing_janaf():
+@pytest.mark.parametrize('sources', ('janaf', ['janaf']))
+def test_de_aliasing_janaf_only(sources):
     input_species = ['H2O', 'C2H2', 'HO2', 'CO']
-    source = 'janaf'
-    output_species = u.de_aliasing(input_species, source)
+    output_species = u.de_aliasing(input_species, sources)
     assert output_species == ['H2O', 'C2H2', 'HOO', 'CO']
 
 
-def test_de_aliasing_cea():
+@pytest.mark.parametrize('sources', ('cea', ['cea']))
+def test_de_aliasing_cea_only(sources):
     input_species = ['H2O', 'C2H2', 'HO2', 'CO']
-    source = 'cea'
-    output_species = u.de_aliasing(input_species, source)
+    output_species = u.de_aliasing(input_species, sources)
     assert output_species == ['H2O', 'C2H2,acetylene', 'HO2', 'CO']
+
+
+def test_de_aliasing_janaf_cea():
+    input_species = ['H2O', 'C2H2', 'HO2', 'CO']
+    sources = ('janaf', 'cea')
+    output_species = u.de_aliasing(input_species, sources)
+    assert output_species == ['H2O', 'C2H2', 'HOO', 'CO']
+
+
+def test_de_aliasing_not_found():
+    input_species = ['H2O', 'C4H2', 'HO2', 'CO']
+    sources = 'janaf'
+    output_species = u.de_aliasing(input_species, sources)
+    assert output_species == ['H2O', 'C4H2', 'HOO', 'CO']
+
+
+def test_de_aliasing_default_cea():
+    input_species = ['H2O', 'C4H2', 'HO2', 'CO']
+    sources = ('janaf', 'cea')
+    output_species = u.de_aliasing(input_species, sources)
+    assert output_species == ['H2O', 'C4H2,butadiyne', 'HOO', 'CO']
 
 
 def test_resolve_sources_with_missing_species():

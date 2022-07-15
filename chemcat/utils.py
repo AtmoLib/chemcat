@@ -77,7 +77,7 @@ def stoich_matrix(stoich_data):
     return elements, stoich_vals
 
 
-def de_aliasing(input_species, source):
+def de_aliasing(input_species, sources):
     """
     Get the right species names as given in the selected database.
 
@@ -85,8 +85,8 @@ def de_aliasing(input_species, source):
     ----------
     input_species: List of strings
         List of species names.
-    source: String
-        The desired database source.
+    sources: String or 1D iterable of strings
+        The desired database sources.
 
     Returns
     -------
@@ -98,16 +98,19 @@ def de_aliasing(input_species, source):
     --------
     >>> import chemcat.utils as u
     >>> input_species = ['H2O', 'C2H2', 'HO2', 'CO']
-    >>> source = 'janaf'
-    >>> output_species = u.de_aliasing(input_species, source)
+    >>> sources = 'janaf'
+    >>> output_species = u.de_aliasing(input_species, sources)
     >>> print(output_species)
     ['H2O', 'C2H2', 'HOO', 'CO']
 
-    >>> source = 'cea'
-    >>> output_species = u.de_aliasing(input_species, source)
+    >>> sources = 'cea'
+    >>> output_species = u.de_aliasing(input_species, sources)
     >>> print(output_species)
     ['H2O', 'C2H2,acetylene', 'HO2', 'CO']
     """
+    if isinstance(sources, str):
+        sources = [sources]
+
     # Get lists of species names aliases:
     whites = f'{ROOT}chemcat/data/white_pages.txt'
     aliases = []
@@ -127,9 +130,18 @@ def de_aliasing(input_species, source):
         if species not in all_aliases:
             output_species.append(species)
             continue
+        # Find set of aliases:
         for alias in aliases:
             if species in alias:
-                output_species.append(alias[source_index[source]])
+                break
+        # Search source in priority order:
+        for source in sources:
+            alias_name = alias[source_index[source]]
+            if alias_name != 'None':
+                output_species.append(alias_name)
+                break
+        else:
+            output_species.append(species)
     return output_species
 
 
