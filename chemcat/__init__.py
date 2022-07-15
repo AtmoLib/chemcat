@@ -1,10 +1,15 @@
-# Copyright (c) 2022 Cubillos and Blecic
+# Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
+__all__ = [
+    'janaf',
+]
+
 from .network import *
+from . import janaf
 from .version import __version__
 
-__all__ = (
+__all__ += (
     network.__all__
 )
 
