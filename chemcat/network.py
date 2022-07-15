@@ -6,6 +6,7 @@ __all__ = [
     'Network',
     'thermo_eval',
     'read_elemental',
+    'set_element_abundance',
 ]
 
 import os
@@ -122,7 +123,7 @@ def thermo_eval(temperature, thermo_funcs):
     >>> temperatures = np.arange(100.0, 4501.0, 10)
     >>> cp1 = cat.thermo_eval(temperature, heat_funcs)
     >>> cp2 = cat.thermo_eval(temperatures, heat_funcs)
-    >>> gibbs = tea.thermo_eval(temperatures, gibbs_funcs)
+    >>> gibbs = cat.thermo_eval(temperatures, gibbs_funcs)
 
     >>> cols = {
     >>>     'H': 'blue',
@@ -177,7 +178,7 @@ def thermo_eval(temperature, thermo_funcs):
 def read_elemental(element_file):
     """
     Extract elemental abundances from a file (defaulted to a solar
-    elemental abundance file from Asplund).
+    elemental abundance file from Asplund 2009).
     Inputs
     ------
     element_file: String
@@ -208,6 +209,78 @@ def read_elemental(element_file):
         element_file, dtype=str, comments='#', usecols=(1,2), unpack=True)
     dex_abundances = np.array(dex, float)
     return elements, dex_abundances
+
+
+
+def set_element_abundance(
+        elements, base_composition, base_dex_abundances,
+        metallicity=0.0, e_abundances={},
+    ):
+    """
+    Set an elemental composition by scaling metals and custom atomic species.
+
+    Parameters
+    ----------
+    elements: 1D string array
+        List of elements to return their abundances.
+    base_composition: 1D float array
+        List of all possible elements.
+    base_dex_abundances: 1D float iterable
+        The elemental base abundances in dex units relative to H=12.0.
+    metallicity: Float
+        Scaling factor for all elemental species except H and He.
+        Dex units relative to the sun (e.g., solar is metallicity=0.0,
+        10x solar is metallicity=1.0).
+    e_abundances: Dictionary of element-abundance pairs
+        Custom elemental abundances (dex, relative to H=12.0) for
+        specific atoms.  These values (if any) override metallicity.
+
+    Returns
+    -------
+    elemental_abundances: 1D float array
+
+    Examples
+    --------
+    >>> import chemcat as cat
+    >>> # Asplund et al. (2009) solar elemental composition:
+    >>> element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    >>> sun_elements, sun_dex = cat.read_elemental(element_file)
+    >>> elements = 'H He C N O'.split()
+    >>> solar = cat.set_element_abundance(
+            elements, sun_elements, sun_dex)
+    >>> heavy = cat.set_element_abundance(
+            elements, sun_elements, sun_dex, metallicity=0.5)
+    >>> carbon = cat.set_element_abundance(
+            elements, sun_elements, sun_dex, e_abundances={'C': 8.8})
+    >>> for i in range(len(elements)):
+    >>>     print(
+    >>>         f'{elements[i]:2}:  '
+    >>>         f'{solar[i]:.1e}  {heavy[i]:.1e}  {carbon[i]:.1e}')
+    H :  1.0e+00  1.0e+00  1.0e+00
+    He:  8.5e-02  8.5e-02  8.5e-02
+    C :  2.7e-04  8.5e-04  6.3e-04
+    N :  6.8e-05  2.1e-04  6.8e-05
+    O :  4.9e-04  1.5e-03  4.9e-04
+    """
+    nelements = len(elements)
+    elemental_abundances = np.zeros(nelements)
+    for j in range(nelements):
+        if elements[j] == 'e':
+            continue
+        idx = list(base_composition).index(elements[j])
+        elemental_abundances[j] = base_dex_abundances[idx]
+
+    # Scale the metals' abundances:
+    imetals = np.isin(elements, 'H He D'.split(), invert=True)
+    elemental_abundances[imetals] += metallicity
+    # Set custom elemental abundances:
+    for element, abundance in e_abundances.items():
+        elemental_abundances[np.array(elements) == element] = abundance
+
+    # Convert elemental log VMR (relative to H=12.0) to VMR (rel. to H=1.0):
+    elemental_abundances = 10**(elemental_abundances-12.0)
+    elemental_abundances[elements == 'e'] = 0.0
+    return elemental_abundances
 
 
 def thermo_eval(temperature, thermo_func):

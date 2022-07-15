@@ -245,3 +245,39 @@ def test_read_elemental_asplund_2009():
         assert element == expected_element
     np.testing.assert_allclose(dex[dex>0], expected_nonzero_dex_2009)
 
+
+def test_set_element_abundance_solar():
+    element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    sun_elements, sun_dex = cat.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    solar = cat.set_element_abundance(
+        elements, sun_elements, sun_dex)
+    expected_abundance = np.array([
+        1.00000000e+00, 8.51138038e-02, 2.69153480e-04, 6.76082975e-05,
+        4.89778819e-04])
+    np.testing.assert_allclose(solar, expected_abundance)
+
+
+def test_set_element_abundance_metallicity():
+    element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    sun_elements, sun_dex = cat.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    heavy = cat.set_element_abundance(
+        elements, sun_elements, sun_dex, metallicity=0.5)
+    expected_abundance = np.array([
+        1.00000000e+00, 8.51138038e-02, 8.51138038e-04, 2.13796209e-04,
+        1.54881662e-03])
+    np.testing.assert_allclose(heavy, expected_abundance)
+
+
+def test_set_element_abundance_custom_element():
+    element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    sun_elements, sun_dex = cat.read_elemental(element_file)
+    elements = 'H He C N O'.split()
+    carbon = cat.set_element_abundance(
+        elements, sun_elements, sun_dex, e_abundances={'C': 8.8})
+    expected_abundance = np.array([
+        1.00000000e+00, 8.51138038e-02, 6.30957344e-04, 6.76082975e-05,
+       4.89778819e-04])
+    np.testing.assert_allclose(carbon, expected_abundance)
+
