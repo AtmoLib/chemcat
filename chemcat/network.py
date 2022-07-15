@@ -124,7 +124,7 @@ class Network(object):
         self.stoich_vals = network_data[4]
 
         self.element_file = \
-            f'{ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
+            f'{ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
         base_data = read_elemental(self.element_file)
         self._base_composition = base_data[0]
         self._base_dex_abundances = base_data[1]
@@ -284,7 +284,7 @@ def read_elemental(element_file):
     --------
     >>> import chemcat as cat
 
-    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
+    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
     >>> elements, dex = cat.read_elemental(element_file)
     >>> for e in 'H He C N O'.split():
     >>>     print(f'{e:2}:  {dex[elements==e][0]:6.3f}')
@@ -349,7 +349,7 @@ def set_element_abundance(
     Examples
     --------
     >>> import chemcat as cat
-    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
+    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
     >>> sun_elements, sun_dex = cat.read_elemental(element_file)
     >>> elements = 'H He C N O'.split()
 
@@ -362,28 +362,28 @@ def set_element_abundance(
     >>>     elements, sun_elements, sun_dex, metallicity=0.5,
     >>> )
     >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 8.5e-04', 'N: 2.1e-04', 'O: 1.5e-03']
+    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 9.1e-04', 'N: 2.1e-04', 'O: 1.5e-03']
 
     >>> # Custom carbon abundance by direct value (dex):
     >>> abund = cat.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_abundances={'C': 8.8},
     >>> )
     >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 6.3e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 6.3e-04', 'N: 6.8e-05', 'O: 4.9e-04']
 
     >>> # Custom carbon abundance by scaling to 2x its solar value:
     >>> abund = cat.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_scale={'C': np.log10(2)},
     >>> )
     >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 5.4e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 5.8e-04', 'N: 6.8e-05', 'O: 4.9e-04']
 
     >>> # Custom carbon abundance by scaling to C/O = 0.8:
     >>> abund = cat.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.8)},
     >>> )
     >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 3.9e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 3.9e-04', 'N: 6.8e-05', 'O: 4.9e-04']
     """
     nelements = len(elements)
     elemental_abundances = np.zeros(nelements)

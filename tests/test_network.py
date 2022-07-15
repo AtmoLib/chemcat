@@ -4,7 +4,9 @@
 import os
 from pathlib import Path
 import sys
+
 import numpy as np
+import pytest
 
 ROOT = str(Path(__file__).parents[1]) + os.path.sep
 sys.path.append(ROOT+'chemcat')
@@ -12,7 +14,30 @@ import chemcat as cat
 import chemcat.janaf as janaf
 
 
-element_file = f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
+# Some default values:
+element_file = f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
+
+expected_dex_asplund_2009 = np.array([
+    7.3 , 12.  , 10.93,  1.05,  1.38,  2.7 ,  8.43,  7.83,  8.69,
+    4.56,  7.93,  6.24,  7.6 ,  6.45,  7.51,  5.41,  7.12,  5.5 ,
+    6.4 ,  5.03,  6.34,  3.15,  4.95,  3.93,  5.64,  5.43,  7.5 ,
+    4.99,  6.22,  4.19,  4.56,  3.04,  3.65,  3.25,  2.52,  2.87,
+    2.21,  2.58,  1.46,  1.88,  1.75,  0.91,  1.57,  0.94,  0.8 ,
+    2.04,  2.24,  2.18,  1.1 ,  1.58,  0.72,  1.42,  0.96,  0.52,
+    1.07,  0.3 ,  1.1 ,  0.48,  0.92,  0.1 ,  0.84,  0.1 ,  0.85,
+    0.85,  1.4 ,  1.38,  0.92,  0.9 ,  1.75,  0.02])
+
+expected_dex_asplund_2021 = np.array([
+    7.3  , 12.   , 10.914,  0.96 ,  1.38 ,  2.7  ,  8.46 ,  7.83 ,
+    8.69 ,  4.4  ,  8.06 ,  6.22 ,  7.55 ,  6.43 ,  7.51 ,  5.41 ,
+    7.12 ,  5.31 ,  6.38 ,  5.07 ,  6.3  ,  3.14 ,  4.97 ,  3.9  ,
+    5.62 ,  5.42 ,  7.46 ,  4.94 ,  6.2  ,  4.18 ,  4.56 ,  3.02 ,
+    3.62 ,  3.12 ,  2.32 ,  2.83 ,  2.21 ,  2.59 ,  1.47 ,  1.88 ,
+    1.75 ,  0.78 ,  1.57 ,  0.96 ,  0.8  ,  2.02 ,  2.22 ,  2.27 ,
+    1.11 ,  1.58 ,  0.75 ,  1.42 ,  0.95 ,  0.52 ,  1.08 ,  0.31 ,
+    1.1  ,  0.48 ,  0.93 ,  0.11 ,  0.85 ,  0.1  ,  0.85 ,  0.79 ,
+    1.35 ,  0.91 ,  0.92 ,  1.95 ,  0.03 ])
+
 
 def test_setup_janaf_network_missing_species():
     molecules = 'Ti Ti+ TiO TiO2 TiO+'.split()
@@ -151,15 +176,17 @@ def test_network_init():
         [0, 1, 0],
         [1, 0, 0],
         [0, 0, 1]])
-    expected_element_rel_abundance = [2.69153480e-04, 1.0e+00, 4.89778819e-04]
+    expected_element_rel_abundance = [2.88403150e-04, 1.0, 4.89778819e-04]
     expected_element_file = \
-        f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
+        f'{cat.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
 
     np.testing.assert_equal(net.pressure, pressure)
     np.testing.assert_equal(net.temperature, temperature)
     np.testing.assert_equal(net.input_species, molecules)
     assert net.metallicity == 0.0
     assert net.e_abundances == {}
+    assert net.e_scale == {}
+    assert net.e_ratio == {}
     assert net.element_file == expected_element_file
 
     np.testing.assert_equal(net.species, molecules)
@@ -229,9 +256,13 @@ def test_network_gibbs_default_temp():
     np.testing.assert_allclose(gibbs[0], expected_gibbs)
 
 
-
-def test_read_elemental_asplund_2009():
-    elements, dex = cat.read_elemental(element_file)
+@pytest.mark.parametrize('sun',
+    [
+        'asplund_2009_solar_abundances.dat',
+        'asplund_2021_solar_abundances.dat',
+    ])
+def test_read_elemental(sun):
+    elements, dex = cat.read_elemental(f'{cat.ROOT}chemcat/data/{sun}')
 
     expected_elements_asplund = (
         'D   H   He  Li  Be  B   C   N   O   F   Ne  Na '
@@ -242,20 +273,15 @@ def test_read_elemental_asplund_2009():
         'Ce  Pr  Nd  Sm  Eu  Gd  Tb  Dy  Ho  Er  Tm '
         'Yb  Lu  Hf  Ta  W   Re  Os  Ir  Pt  Au  Hg '
         'Tl  Pb  Bi  Th  U').split()
-    expected_nonzero_dex_2009 = np.array([
-        7.3 , 12.  , 10.93,  1.05,  1.38,  2.7 ,  8.43,  7.83,  8.69,
-        4.56,  7.93,  6.24,  7.6 ,  6.45,  7.51,  5.41,  7.12,  5.5 ,
-        6.4 ,  5.03,  6.34,  3.15,  4.95,  3.93,  5.64,  5.43,  7.5 ,
-        4.99,  6.22,  4.19,  4.56,  3.04,  3.65,  3.25,  2.52,  2.87,
-        2.21,  2.58,  1.46,  1.88,  1.75,  0.91,  1.57,  0.94,  0.8 ,
-        2.04,  2.24,  2.18,  1.1 ,  1.58,  0.72,  1.42,  0.96,  0.52,
-        1.07,  0.3 ,  1.1 ,  0.48,  0.92,  0.1 ,  0.84,  0.1 ,  0.85,
-        0.85,  1.4 ,  1.38,  0.92,  0.9 ,  1.75,  0.02])
+    if '2009' in sun:
+        expected_dex_asplund = expected_dex_asplund_2009
+    elif '2021' in sun:
+        expected_dex_asplund = expected_dex_asplund_2021
 
     assert len(elements) == 84
     for element, expected_element in zip(elements, expected_elements_asplund):
         assert element == expected_element
-    np.testing.assert_allclose(dex[dex>0], expected_nonzero_dex_2009)
+    np.testing.assert_allclose(dex[dex>0], expected_dex_asplund)
 
 
 def test_set_element_abundance_solar():
@@ -264,7 +290,7 @@ def test_set_element_abundance_solar():
     e_abundances = cat.set_element_abundance(
         elements, sun_elements, sun_dex)
     expected_abundance = np.array([
-        1.0, 8.51138038e-02, 2.69153480e-04, 6.76082975e-05, 4.89778819e-04,
+        1.0, 8.20351544e-02, 2.88403150e-04, 6.76082975e-05, 4.89778819e-04,
     ])
     np.testing.assert_allclose(e_abundances, expected_abundance)
 
@@ -274,7 +300,7 @@ def test_set_element_abundance_metallicity():
     e_abundances = cat.set_element_abundance(
         elements, sun_elements, sun_dex, metallicity=0.5)
     expected_abundance = np.array([
-        1.0, 8.51138038e-02, 8.51138038e-04, 2.13796209e-04, 1.54881662e-03,
+        1.0, 8.20351544e-02, 9.12010839e-04, 2.13796209e-04, 1.54881662e-03,
     ])
     np.testing.assert_allclose(e_abundances, expected_abundance)
 
@@ -285,7 +311,7 @@ def test_set_element_abundance_custom_element():
     e_abundances = cat.set_element_abundance(
         elements, sun_elements, sun_dex, e_abundances={'C': 8.8})
     expected_abundance = np.array([
-        1.0, 8.51138038e-02, 6.30957344e-04, 6.76082975e-05, 4.89778819e-04,
+        1.0, 8.20351544e-02, 6.30957344e-04, 6.76082975e-05, 4.89778819e-04,
     ])
     np.testing.assert_allclose(e_abundances, expected_abundance)
 
@@ -296,7 +322,7 @@ def test_set_element_abundance_custom_e_scale():
     e_abundances = cat.set_element_abundance(
         elements, sun_elements, sun_dex, e_scale={'C': np.log10(3.0)})
     expected_abundance = np.array([
-        1.0, 8.51138038e-02, 8.07460441e-04, 6.76082975e-05, 4.89778819e-04,
+        1.0, 8.20351544e-02, 8.65209451e-04, 6.76082975e-05, 4.89778819e-04,
     ])
     np.testing.assert_allclose(e_abundances, expected_abundance)
 
@@ -307,7 +333,7 @@ def test_set_element_abundance_custom_e_ratio():
     e_abundances = cat.set_element_abundance(
         elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.6)})
     expected_abundance = np.array([
-        1.0, 8.51138038e-02, 2.938672914e-04, 6.76082975e-05, 4.89778819e-04,
+        1.0, 8.20351544e-02, 2.93867292e-04, 6.76082975e-05, 4.89778819e-04
     ])
     np.testing.assert_allclose(e_abundances, expected_abundance)
 
