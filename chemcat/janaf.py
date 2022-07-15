@@ -315,7 +315,10 @@ def find_species(elements, charge='neutral', num_atoms=None, state='gas'):
 
     Parameters
     ----------
-    elements: 1D string iterable
+    elements: Dict or 1D string iterable
+        Either:
+        - A list of elements that must be present in the species, or
+        - A dictionary of elements and their stoichiometric values.
     charge: String
         If 'neutral', limit the output only to neutrally charged species.
         If 'ion', limit the output only to charged species.
@@ -340,14 +343,23 @@ def find_species(elements, charge='neutral', num_atoms=None, state='gas'):
     ['LiONa' 'Na2' 'Na2SO4' 'NaAlF4' 'NaBO2' '(NaBr)2' 'NaBr' '(NaCl)2' 'NaCl'
      '(NaCN)2' 'NaCN' '(NaF)2' 'NaF' 'Na' 'NaH' 'NaO' '(NaOH)2' 'NaOH']
 
-    >>> # Get all species containing carbon and oxygen:
-    >>> carbon_oxydes = janaf.find_species('C O'.split())
-    >>> print(carbon_oxydes)
-    ['C2H4O' 'C2O' 'C3O2' 'CF3OF' 'CO2' 'COCl2' 'COClF' 'COCl' 'COF2' 'COF'
-     'CO' 'COS' 'Fe(CO)5' 'H2CO' 'HCOF' 'HCO' 'HNCO' 'NC101' 'Ni(CO)4']
+    >>> # Get species containing exactly two Na atoms:
+    >>> species = janaf.find_species({'Na':2})
+    >>> print(species)
+    ['Na2' 'Na2SO4' '(NaBr)2' '(NaCl)2' '(NaCN)2' '(NaF)2' '(NaOH)2']
+
+    >>> # Species containing exactly two Na atoms and any amount of oxygen:
+    >>> species = janaf.find_species({'Na':2, 'O':None})
+    >>> print(species)
+    ['Na2SO4' '(NaOH)2']
+
+    >>> # Get all species containing sodium and oxygen (any amount):
+    >>> species = janaf.find_species(['Na', 'O'])
+    >>> print(species)
+    ['LiONa' 'Na2SO4' 'NaBO2' 'NaO' '(NaOH)2' 'NaOH']
 
     >>> # Get all hydrogen-ion species:
-    >>> H_ions= janaf.find_species(['H'], charge='ion')
+    >>> H_ions = janaf.find_species(['H'], charge='ion')
     >>> print(H_ions)
     ['AlOH-' 'AlOH+' 'BaOH+' 'BeH+' 'BeOH+' 'CaOH+' 'CH+' 'CsOH+' 'H2-' 'H2+'
      'H3O+' 'HBO-' 'HBO+' 'HBS+' 'HCO+' 'HD-' 'HD+' 'H-' 'H+' 'KOH+' 'LiOH+'
@@ -358,6 +370,10 @@ def find_species(elements, charge='neutral', num_atoms=None, state='gas'):
     >>> print(diatomic)
     ['Na2' 'NaBr' 'NaCl' 'NaF' 'NaH' 'NaO' 'NaO-']
     """
+    # Turn into dict if needed:
+    if not isinstance(elements, dict):
+        elements = {e:None for e in elements}
+
     janaf_dict = {}
     for line in open(f'{ROOT}chemcat/data/janaf_conversion.txt', 'r'):
         species_name, janaf_name = line.split()
@@ -381,8 +397,13 @@ def find_species(elements, charge='neutral', num_atoms=None, state='gas'):
             if n_atoms != num_atoms:
                 continue
 
-        if np.all(np.isin(elements, list(stoich.keys()))):
+        # Request selected stoichiometric values:
+        for key, val in elements.items():
+            if key not in stoich or (val is not None and stoich[key] != val):
+                break
+        else:
             species.append(molec)
+
     return np.array(species)
 
 

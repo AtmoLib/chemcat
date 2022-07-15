@@ -265,12 +265,19 @@ def test_setup_janaf_network_missing_species():
 
 
 def test_find_species_single():
-    expected_species = [
+    species = janaf.find_species(['K'])
+    assert list(species) == [
+        'K2', 'K2SO4', 'KBF4', 'KBO2', '(KBr)2', 'KBr', '(KCl)2', 'KCl',
+        '(KCN)2', 'KCN', '(KF)2', 'KF', 'K', 'KH', '(KI)2', 'KI', 'KO',
+        '(KOH)2', 'KOH']
+
+
+def test_find_species_dict_without_stoich_values():
+    specs = janaf.find_species({'K':None})
+    assert list(specs) == [
        'K2', 'K2SO4', 'KBF4', 'KBO2', '(KBr)2', 'KBr', '(KCl)2', 'KCl',
        '(KCN)2', 'KCN', '(KF)2', 'KF', 'K', 'KH', '(KI)2', 'KI', 'KO',
        '(KOH)2', 'KOH']
-    salts = janaf.find_species(['K'])
-    assert list(salts) == expected_species
 
 
 def test_find_species_multiple():
@@ -291,4 +298,12 @@ def test_find_species_neutral_and_ions():
 def test_find_species_num_atoms():
     specs = janaf.find_species(['Na'], num_atoms=2, charge='all')
     assert list(specs) == ['Na2', 'NaBr', 'NaCl', 'NaF', 'NaH', 'NaO', 'NaO-']
+
+
+def test_find_species_with_stoich_values():
+    specs = janaf.find_species({'K': 2})
+    assert list(specs) == [
+        'K2', 'K2SO4', '(KBr)2', '(KCl)2', '(KCN)2', '(KF)2', '(KI)2',
+        '(KOH)2',
+    ]
 

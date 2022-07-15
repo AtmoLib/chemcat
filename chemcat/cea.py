@@ -325,7 +325,7 @@ def find_species(elements, charge='neutral', num_atoms=None):
 
     Parameters
     ----------
-    elements: 1D string iterable
+    elements: Dict or 1D string iterable
         Either:
         - A list of elements that must be present in the species, or
         - A dictionary of elements and their stoichiometric values.
