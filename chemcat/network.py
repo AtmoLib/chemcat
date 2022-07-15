@@ -123,7 +123,8 @@ class Network(object):
         self._gibbs_free_energy = network_data[3]
         self.stoich_vals = network_data[4]
 
-        self.element_file = f'{ROOT}chemcat/data/abundances.txt'
+        self.element_file = \
+            f'{ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
         base_data = read_elemental(self.element_file)
         self._base_composition = base_data[0]
         self._base_dex_abundances = base_data[1]
@@ -282,8 +283,8 @@ def read_elemental(element_file):
     Examples
     --------
     >>> import chemcat as cat
-    >>> # Asplund et al. (2009) solar elemental composition:
-    >>> element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+
+    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
     >>> elements, dex = cat.read_elemental(element_file)
     >>> for e in 'H He C N O'.split():
     >>>     print(f'{e:2}:  {dex[elements==e][0]:6.3f}')
@@ -320,39 +321,69 @@ def set_element_abundance(
         Dex units relative to the sun (e.g., solar is metallicity=0.0,
         10x solar is metallicity=1.0).
     e_abundances: Dictionary of element-abundance pairs
-        Custom elemental abundances (dex, relative to H=12.0) for
-        specific atoms.  These values (if any) override metallicity.
+        Set custom elemental abundances.
+        The dict contains the name of the element and their custom
+        abundance in dex units relative to H=12.0.
+        These values (if any) override metallicity.
+    e_scale: Dictionary of element-scaling pairs
+        Set custom elemental abundances by scaling from its solar value.
+        The dict contains the name of the element and their custom
+        scaling factor in dex units, e.g., for 2x solar carbon set
+        e_scale = {'C': np.log10(2.0)}.
+        This argument modifies the abundances on top of any custom
+        metallicity and e_abundances.
+    e_ratio: Dictionary of element-ratio pairs
+        Set custom elemental abundances by scaling relative to another
+        element.
+        The dict contains the pair of elements joined by an underscore
+        and their ratio in dex units, e.g., for a C/O ratio of 0.8 set
+        e_ratio = {'C_O': np.log10(0.8)}.
+        These values scale on top of any custom metallicity,
+        e_abundances, and e_scale.
 
     Returns
     -------
     elemental_abundances: 1D float array
+        Elemental volume mixing ratios relative to H=1.0.
 
     Examples
     --------
     >>> import chemcat as cat
-    >>> # Asplund et al. (2009) solar elemental composition:
-    >>> element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    >>> element_file = f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
     >>> sun_elements, sun_dex = cat.read_elemental(element_file)
     >>> elements = 'H He C N O'.split()
+
     >>> solar = cat.set_element_abundance(
-            elements, sun_elements, sun_dex)
-    >>> heavy = cat.set_element_abundance(
-            elements, sun_elements, sun_dex, metallicity=0.5)
-    >>> carbon = cat.set_element_abundance(
-            elements, sun_elements, sun_dex, e_abundances={'C': 8.8})
-    >>> scale = tea.set_element_abundance(
-            elements, sun_elements, sun_dex, e_scale={'C': 0.37})
-    >>> ratio = tea.set_element_abundance(
-            elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.8)})
-    >>> for i in range(len(elements)):
-    >>>     print(
-    >>>         f'{solar[i]:.1e}  {heavy[i]:.1e}  {carbon[i]:.1e}  '
-    >>>         f'{scale[i]:.1e}  {ratio[i]:.1e}')
-    H :  1.0e+00  1.0e+00  1.0e+00  1.0e+00  1.0e+00
-    He:  8.5e-02  8.5e-02  8.5e-02  8.5e-02  8.5e-02
-    C :  2.7e-04  8.5e-04  6.3e-04  6.3e-04  3.9e-04
-    N :  6.8e-05  2.1e-04  6.8e-05  6.8e-05  6.8e-05
-    O :  4.9e-04  1.5e-03  4.9e-04  4.9e-04  4.9e-04
+    >>>     elements, sun_elements, sun_dex,
+    >>> )
+
+    >>> # Set custom metallicity to [M/H] = 0.5:
+    >>> abund = cat.set_element_abundance(
+    >>>     elements, sun_elements, sun_dex, metallicity=0.5,
+    >>> )
+    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
+    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 8.5e-04', 'N: 2.1e-04', 'O: 1.5e-03']
+
+    >>> # Custom carbon abundance by direct value (dex):
+    >>> abund = cat.set_element_abundance(
+    >>>     elements, sun_elements, sun_dex, e_abundances={'C': 8.8},
+    >>> )
+    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
+    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 6.3e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+
+    >>> # Custom carbon abundance by scaling to 2x its solar value:
+    >>> abund = cat.set_element_abundance(
+    >>>     elements, sun_elements, sun_dex, e_scale={'C': np.log10(2)},
+    >>> )
+    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
+    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 5.4e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+
+    >>> # Custom carbon abundance by scaling to C/O = 0.8:
+    >>> abund = cat.set_element_abundance(
+    >>>     elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.8)},
+    >>> )
+    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
+    ['H: 1.0e+00', 'He: 8.5e-02', 'C: 3.9e-04', 'N: 6.8e-05', 'O: 4.9e-04']
     """
     nelements = len(elements)
     elemental_abundances = np.zeros(nelements)

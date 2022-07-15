@@ -12,7 +12,7 @@ import chemcat as cat
 import chemcat.janaf as janaf
 
 
-element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+element_file = f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
 
 def test_setup_janaf_network_missing_species():
     molecules = 'Ti Ti+ TiO TiO2 TiO+'.split()
@@ -152,7 +152,8 @@ def test_network_init():
         [1, 0, 0],
         [0, 0, 1]])
     expected_element_rel_abundance = [2.69153480e-04, 1.0e+00, 4.89778819e-04]
-    expected_element_file = f'{cat.ROOT}chemcat/data/abundances.txt'
+    expected_element_file = \
+        f'{cat.ROOT}chemcat/data/asplund_2009_solar_abundances.dat'
 
     np.testing.assert_equal(net.pressure, pressure)
     np.testing.assert_equal(net.temperature, temperature)
