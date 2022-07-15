@@ -6,8 +6,6 @@ from pathlib import Path
 import sys
 import numpy as np
 
-ROOT = str(Path(__file__).parents[1]) + os.path.sep
-sys.path.append(ROOT+'chemcat')
 import chemcat.janaf as janaf
 
 

@@ -74,6 +74,42 @@ class Network(object):
         source='janaf',
     ):
         """
+        Parameters
+        ----------
+        pressure: 1D float iterable
+            Pressure profile (bar).
+        temperature: 1D float iterable
+            Temperature profile (Kelvin).
+        input_species: 1D string iterable
+            List of atomic, molecular, and ionic species to include in the
+            chemical network.  Species not found in the database will be
+            discarded.
+        metallicity: Float
+            Scaling factor for all elemental species except H and He.
+            Dex units relative to the sun (e.g., solar is metallicity=0.0,
+            10x solar is metallicity=1.0).
+        e_abundances: Dictionary
+            Custom elemental abundances.
+            The dict contains the name of the element and their custom
+            abundance in dex units relative to H=12.0.
+            These values override metallicity.
+        e_scale: Dictionary
+            Custom elemental abundances scaled relative to solar values.
+            The dict contains the name of the element and their custom
+            scaling factor in dex units, e.g., for 2x solar carbon set
+            e_scale = {'C': np.log10(2.0)}.
+            This argument modifies the abundances on top of any custom
+            metallicity and e_abundances.
+        e_ratio: Dictionary
+            Custom elemental abundances scaled relative to another element.
+            The dict contains the pair of elements joined by an underscore
+            and their ratio in dex units, e.g., for a C/O ratio of 0.8 set
+            e_ratio = {'C_O': np.log10(0.8)}.
+            These values modify the abundances on top of any custom
+            metallicity, e_abundances, and e_scale.
+        source: String
+            Name of database where to get the thermochemical properties.
+
         Examples
         --------
         >>> import chemcat as cat
@@ -177,18 +213,37 @@ class Network(object):
 
 
     def thermochemical_equilibrium(
-        self, temperature=None, metallicity=None, e_abundances=None):
+        self, temperature=None,
+        metallicity=None, e_abundances=None,
+        e_scale=None, e_ratio=None,
+    ):
+        """
+        Compute thermochemical-equilibrium abundances, updating the
+        atmospheric properties if requested.
+        """
         if temperature is not None:
+            if np.shape(temperature) != np.shape(self.pressure):
+                raise ValueError(
+                    'Temperature profile does not match size of pressure '
+                    f'profile ({len(self.pressure)} layers)'
+                )
             self.temperature = temperature
         if metallicity is not None:
-            self.metallicty = metallicity
+            self.metallicity = metallicity
         if e_abundances is not None:
             self.e_abundances = e_abundances
+        if e_scale is not None:
+            self.e_scale = e_scale
+        if e_ratio is not None:
+            self.e_ratio = e_ratio
 
         self.vmr = thermochemical_equilibrium(
-            self.pressure, self.temperature,
-            self.element_rel_abundance, self.stoich_vals,
-            self._gibbs_free_energy)
+            self.pressure,
+            self.temperature,
+            self.element_rel_abundance,
+            self.stoich_vals,
+            self._gibbs_free_energy,
+        )
         return self.vmr
 
 
@@ -502,7 +557,7 @@ def thermochemical_equilibrium(
 
     # Compute thermochemical equilibrium abundances at each layer:
     # (Go down the layers and then sweep back in case the first run
-    # didn't get the global min.)
+    # didn't get the global minimum)
     for i in itertools.chain(range(nlayers), reversed(range(nlayers))):
         abundances[abundances <= 0] = 1e-300
         exit_status = nr.gibbs_energy_minimizer(
