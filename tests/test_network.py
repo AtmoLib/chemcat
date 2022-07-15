@@ -369,3 +369,14 @@ def test_set_element_abundance_custom_e_ratio():
     ])
     np.testing.assert_allclose(e_abundances, expected_abundance)
 
+
+def test_write_file(tmpdir):
+    atm_file = "WASP-00b.atm"
+    atm = f'{tmpdir}/{atm_file}'
+
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    vmr = net.thermochemical_equilibrium()
+    cat.write_file(atm, net.species, net_pressure, net_temperature, vmr)
+    assert atm_file in os.listdir(str(tmpdir))
+    # TBD: Open file and check values
+

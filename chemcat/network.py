@@ -8,6 +8,7 @@ __all__ = [
     'read_elemental',
     'set_element_abundance',
     'thermochemical_equilibrium',
+    'write_file',
 ]
 
 import itertools
@@ -571,4 +572,64 @@ def thermochemical_equilibrium(
         vmr[i] = abundances / np.sum(abundances[~electron_index])
 
     return vmr
+
+
+def write_file(tea_file, species, pressure, temperature, vmr):
+    """
+    Write results to file.
+
+    Parameters
+    ----------
+    tea_file: String
+        Output file name.
+    species: 1D string iterable
+        Names of atmospheric species.
+    pressure: 1D float iterable
+        Atmospheric pressure profile (bar).
+    temperature: 1D float iterable
+        Atmospheric temperature profile (kelvin).
+    vmr: 2D float iterable
+        Atmospheric volume mixing ratios (of shape [nlayers,nspecies]).
+
+    Examples
+    --------
+    >>> import chemcat as cat
+    >>> import numpy as np
+
+    >>> nlayers = 81
+    >>> temperature = np.tile(1200.0, nlayers)
+    >>> pressure = np.logspace(-8, 3, nlayers)
+    >>> molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    >>> net = cat.Network(pressure, temperature, molecules)
+    >>> vmr = net.thermochemical_equilibrium()
+    >>> cat.write_file(
+    >>>     'output_file.dat', net.species, pressure, temperature, vmr,
+    >>> )
+    """
+    fout = open(tea_file, 'w+')
+
+    # Header info:
+    fout.write(
+        '# TEA output file with abundances calculated in '
+        'thermochemical equilibrium.\n'
+        '# Units: pressure (bar), temperature (K), abundance '
+        '(volume mixing ratio).\n\n')
+
+    # List of species:
+    fout.write('#SPECIES\n')
+    fout.write(' '.join(spec for spec in species))
+    fout.write('\n\n')
+
+    # Atmospheric data:
+    fout.write('#TEADATA\n')
+    fout.write('#Pressure   Temp     ')
+    fout.write(''.join(f'{spec:<11}' for spec in species) + '\n')
+
+    nlayers = len(pressure)
+    for i in range(nlayers):
+        fout.write(f'{pressure[i]:.4e}  {temperature[i]:7.2f} ')
+        for abund in vmr[i]:
+            fout.write(f'{abund:11.4e}')
+        fout.write('\n')
+    fout.close()
 
