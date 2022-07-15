@@ -7,6 +7,54 @@ import pytest
 import chemcat.utils as u
 
 
+def test_stoich_matrix_neutrals():
+    stoich_data = [
+        {'H': 2.0, 'O': 1.0},
+        {'C': 1.0, 'H': 4.0},
+        {'C': 1.0, 'O': 2.0},
+        {'H': 2.0},
+        {'H': 1.0},
+        {'He': 1.0},
+    ]
+    expected_stoich = np.array([
+        [0, 2, 0, 1],
+        [1, 4, 0, 0],
+        [1, 0, 0, 2],
+        [0, 2, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+    ])
+
+    elements, stoich_matrix = u.stoich_matrix(stoich_data)
+    np.testing.assert_equal(elements, np.array(['C', 'H', 'He', 'O']))
+    np.testing.assert_equal(stoich_matrix, expected_stoich)
+
+
+def test_stoich_matrix_ions():
+    stoich_data = [
+        {'H': 2.0, 'O': 1.0},
+        {'C': 1.0, 'H': 4.0},
+        {'C': 1.0, 'O': 2.0},
+        {'H': 2.0},
+        {'H': 1.0, 'e': -1.0},
+        {'He': 1.0},
+        {'e': 1.0},
+    ]
+    expected_stoich = np.array([
+        [ 0,  2,  0,  1,  0],
+        [ 1,  4,  0,  0,  0],
+        [ 1,  0,  0,  2,  0],
+        [ 0,  2,  0,  0,  0],
+        [ 0,  1,  0,  0, -1],
+        [ 0,  0,  1,  0,  0],
+        [ 0,  0,  0,  0,  1],
+    ])
+
+    elements, stoich_matrix = u.stoich_matrix(stoich_data)
+    np.testing.assert_equal(elements, np.array(['C', 'H', 'He', 'O', 'e']))
+    np.testing.assert_equal(stoich_matrix, expected_stoich)
+
+
 def test_de_aliasing_janaf():
     input_species = ['H2O', 'C2H2', 'HO2', 'CO']
     source = 'janaf'

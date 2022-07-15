@@ -3,6 +3,7 @@
 
 __all__ = [
     'ROOT',
+    'stoich_matrix',
     'de_aliasing',
     'resolve_sources',
 ]
@@ -12,9 +13,68 @@ from pathlib import Path
 
 import numpy as np
 
+# Need to define ROOT before importing modules (co-dependency):
 ROOT = str(Path(__file__).parents[1]) + os.path.sep
-import tea.janaf as janaf
-import tea.cea as cea
+
+from . import janaf
+from . import cea
+
+
+def stoich_matrix(stoich_data):
+    r"""
+    Compute matrix of stoichiometric values for the given stoichiometric
+    data for a network of species.
+
+    Parameters
+    ----------
+    stoich_data: List of dictionaries
+        Stoichiometric data (as dictionary of element-value pairs) for
+        a list of species.
+
+    Returns
+    -------
+    elements: 1D string array
+        Elements for this chemical network.
+    stoich_vals: 2D integer array
+        Array containing the stoichiometric values for the
+        requested species sorted according to the species and elements
+        arrays.
+
+    Examples
+    --------
+    >>> import chemcat.utils as u
+    >>> stoich_data = [
+    >>>     {'H': 2.0, 'O': 1.0},
+    >>>     {'C': 1.0, 'H': 4.0},
+    >>>     {'C': 1.0, 'O': 2.0},
+    >>>     {'H': 2.0},
+    >>>     {'H': 1.0},
+    >>>     {'He': 1.0},
+    >>> ]
+    >>> elements, stoich_matrix = u.stoich_matrix(stoich_data)
+    >>> print(elements, stoich_matrix, sep='\n')
+    ['C' 'H' 'He' 'O']
+    [[0 2 0 1]
+     [1 4 0 0]
+     [1 0 0 2]
+     [0 2 0 0]
+     [0 1 0 0]
+     [0 0 1 0]]
+    """
+    elements = []
+    for s in stoich_data:
+        elements += list(s.keys())
+    elements = sorted(set(elements))
+
+    nspecies = len(stoich_data)
+    nelements = len(elements)
+    stoich_vals = np.zeros((nspecies, nelements), int)
+    for i in range(nspecies):
+        for key,val in stoich_data[i].items():
+            j = elements.index(key)
+            stoich_vals[i,j] = val
+    elements = np.array(elements)
+    return elements, stoich_vals
 
 
 def de_aliasing(input_species, source):
