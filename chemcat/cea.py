@@ -17,8 +17,7 @@ from collections.abc import Iterable
 from more_itertools import sliced
 import numpy as np
 
-
-ROOT = str(Path(__file__).parents[1]) + os.path.sep
+from .utils import ROOT
 sys.path.append(f'{ROOT}chemcat/lib')
 import _utils as u
 
@@ -226,49 +225,40 @@ def setup_network(input_species):
     species: 1D string array
         Species found in the CEA database (might differ from
         input_species if there are species not found on the database).
-    elements: 1D string array
-        Elements for this chemical network.
     heat_capacity: 1D list of callable objects
         Functions that evaluate the species's heat capacity (cp/R)
         at requested temperatures.
     gibbs_free_energy: 1D list of callable objects
         Functions that evaluate the species's Gibbs free energy (G/RT)
         at requested temperatures.
-    stoich_vals: 2D integer array
-        Array containing the stoichiometric values for the
-        requested species sorted according to the species and elements
-        arrays.
+    stoich_data: List of dictionaries
+        Stoichiometric data (as dictionary of element-value pairs) for
+        a list of species.
 
     Examples
     --------
     >>> import chemcat.cea as cea
 
     >>> molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
-    >>> species, elements, heat_capacity, gibbs, stoich_vals = \
+    >>> species, heat_capacity, gibbs, stoich_data = \
     >>>     cea.setup_network(molecules)
-    >>> print(
-    >>>     f'species:\n  {species}\n'
-    >>>     f'elements:\n  {elements}\n'
-    >>>     f'stoichiometric values:\n{stoich_vals}')
-    species:
-      ['H2O' 'CH4' 'CO' 'CO2' 'NH3' 'N2' 'H2' 'HCN' 'OH' 'H' 'He' 'C' 'N' 'O']
-    elements:
-      ['C' 'H' 'He' 'N' 'O']
-    stoichiometric values:
-    [[0 2 0 0 1]
-     [1 4 0 0 0]
-     [1 0 0 0 1]
-     [1 0 0 0 2]
-     [0 3 0 1 0]
-     [0 0 0 2 0]
-     [0 2 0 0 0]
-     [1 1 0 1 0]
-     [0 1 0 0 1]
-     [0 1 0 0 0]
-     [0 0 1 0 0]
-     [1 0 0 0 0]
-     [0 0 0 1 0]
-     [0 0 0 0 1]]
+
+    >>> for spec, stoich in zip(species, stoich_data):
+    >>>     print(f'{spec:3s}:  {stoich}')
+    H2O:  {'H': 2.0, 'O': 1.0}
+    CH4:  {'C': 1.0, 'H': 4.0}
+    CO :  {'C': 1.0, 'O': 1.0}
+    CO2:  {'C': 1.0, 'O': 2.0}
+    NH3:  {'N': 1.0, 'H': 3.0}
+    N2 :  {'N': 2.0}
+    H2 :  {'H': 2.0}
+    HCN:  {'H': 1.0, 'C': 1.0, 'N': 1.0}
+    OH :  {'O': 1.0, 'H': 1.0}
+    H  :  {'H': 1.0}
+    He :  {'He': 1.0}
+    C  :  {'C': 1.0}
+    N  :  {'N': 1.0}
+    O  :  {'O': 1.0}
     """
     # Find which species exists in data base:
     thermo_data = read_thermo_build(input_species)
@@ -296,25 +286,11 @@ def setup_network(input_species):
             gibbs_func(data['a_coeffs'], data['b_coeffs'], data['t_coeffs']))
         stoich_data.append(data['stoich'])
 
-    elements = []
-    for s in stoich_data:
-        elements += list(s.keys())
-    elements = sorted(set(elements))
-
-    nelements = len(elements)
-    stoich_vals = np.zeros((nspecies, nelements), int)
-    for i in range(nspecies):
-        for key,val in stoich_data[i].items():
-            j = elements.index(key)
-            stoich_vals[i,j] = val
-    elements = np.array(elements)
-
     return (
         species,
-        elements,
         heat_capacity,
         gibbs_free_energy,
-        stoich_vals,
+        stoich_data,
     )
 
 

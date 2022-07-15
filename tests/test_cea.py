@@ -107,74 +107,57 @@ def test_heat_func_cea_array(temp):
 
 
 def test_setup_network_cea_neutrals():
-    molecules = 'H2O CH4 CO CO2 H2 C2H2,acetylene C2H4 OH H He'.split()
+    molecules = 'H2O CH4 CO2 H2 H He'.split()
     cea_data = cea.setup_network(molecules)
 
     expected_elements = ['C', 'H', 'He', 'O']
-    expected_stoich_vals = np.array([
-        [0, 2, 0, 1],
-        [1, 4, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 0, 2],
-        [0, 2, 0, 0],
-        [2, 2, 0, 0],
-        [2, 4, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0]
-    ])
+    expected_stoich = [
+        {'H': 2.0, 'O': 1.0},
+        {'C': 1.0, 'H': 4.0},
+        {'C': 1.0, 'O': 2.0},
+        {'H': 2.0},
+        {'H': 1.0},
+        {'He': 1.0},
+    ]
 
-    assert len(cea_data) == 5
+    assert len(cea_data) == 4
     np.testing.assert_equal(cea_data[0], molecules)
-    np.testing.assert_equal(cea_data[1], expected_elements)
-    np.testing.assert_equal(cea_data[4], expected_stoich_vals)
+    np.testing.assert_equal(cea_data[3], expected_stoich)
 
 
 def test_setup_network_cea_ions():
-    molecules = (
-        'H2O CH4 CO CO2 H2 C2H2,acetylene C2H4 OH '
-        'H He e- H- H+ H2+ He+').split()
+    molecules = 'H2O CH4 CO2 H2 H He e- H- H2+'.split()
     cea_data = cea.setup_network(molecules)
 
-    expected_stoich_vals = np.array([
-        [ 0,  2,  0,  1,  0],
-        [ 1,  4,  0,  0,  0],
-        [ 1,  0,  0,  1,  0],
-        [ 1,  0,  0,  2,  0],
-        [ 0,  2,  0,  0,  0],
-        [ 2,  2,  0,  0,  0],
-        [ 2,  4,  0,  0,  0],
-        [ 0,  1,  0,  1,  0],
-        [ 0,  1,  0,  0,  0],
-        [ 0,  0,  1,  0,  0],
-        [ 0,  0,  0,  0,  1],
-        [ 0,  1,  0,  0,  1],
-        [ 0,  1,  0,  0, -1],
-        [ 0,  2,  0,  0, -1],
-        [ 0,  0,  1,  0, -1]
-    ])
+    expected_stoich = [
+        {'H': 2.0, 'O': 1.0},
+        {'C': 1.0, 'H': 4.0},
+        {'C': 1.0, 'O': 2.0},
+        {'H': 2.0},
+        {'H': 1.0},
+        {'He': 1.0},
+        {'e': 1.0},
+        {'H': 1.0, 'e': 1.0},
+        {'H': 2.0, 'e': -1.0},
+    ]
 
-    assert len(cea_data) == 5
     np.testing.assert_equal(cea_data[0], molecules)
-    np.testing.assert_equal(cea_data[1], ['C', 'H', 'He', 'O', 'e'])
-    np.testing.assert_equal(cea_data[4], expected_stoich_vals)
+    np.testing.assert_equal(cea_data[3], expected_stoich)
 
 
 def test_setup_network_cea_missing_species():
-    molecules = 'Ti Ti+ TiO TiO2 TiO2+'.split()
+    molecules = 'Ti Ti+ TiO TiO2+ TiO2'.split()
     cea_data = cea.setup_network(molecules)
 
-    expected_stoich_vals = np.array([
-        [ 0,  1,  0],
-        [ 0,  1, -1],
-        [ 1,  1,  0],
-        [ 2,  1,  0]
-    ])
+    expected_stoich= [
+        {'Ti': 1.0},
+        {'Ti': 1.0, 'e': -1.0},
+        {'Ti': 1.0, 'O': 1.0},
+        {'Ti': 1.0, 'O': 2.0},
+    ]
 
-    assert len(cea_data) == 5
     np.testing.assert_equal(cea_data[0], ['Ti', 'Ti+', 'TiO', 'TiO2'])
-    np.testing.assert_equal(cea_data[1], ['O', 'Ti', 'e'])
-    np.testing.assert_equal(cea_data[4], expected_stoich_vals)
+    np.testing.assert_equal(cea_data[3], expected_stoich)
 
 
 def test_find_species_single():
