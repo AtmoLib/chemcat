@@ -308,7 +308,7 @@ def setup_network(input_species):
     )
 
 
-def find_species(elements, state='gas', charge='neutral'):
+def find_species(elements, charge='neutral', num_atoms=None, state='gas'):
     """
     Find all JANAF species that contain the specified properties
     (elements, charge, state).
@@ -316,12 +316,14 @@ def find_species(elements, state='gas', charge='neutral'):
     Parameters
     ----------
     elements: 1D string iterable
-    state: String
-        If 'gas', limit the output to gaseous species.
     charge: String
         If 'neutral', limit the output only to neutrally charged species.
         If 'ion', limit the output only to charged species.
         Else, do not limit output.
+    num_atoms: Integer
+        Limit the number of atoms to the requested value.
+    state: String
+        If 'gas', limit the output to gaseous species.
 
     Returns
     -------
@@ -331,22 +333,30 @@ def find_species(elements, state='gas', charge='neutral'):
     Examples
     --------
     >>> import chemcat.janaf as janaf
+
     >>> # Get all sodium-bearing species:
     >>> salts = janaf.find_species(['Na'])
     >>> print(salts)
     ['LiONa' 'Na2' 'Na2SO4' 'NaAlF4' 'NaBO2' '(NaBr)2' 'NaBr' '(NaCl)2' 'NaCl'
      '(NaCN)2' 'NaCN' '(NaF)2' 'NaF' 'Na' 'NaH' 'NaO' '(NaOH)2' 'NaOH']
+
     >>> # Get all species containing carbon and oxygen:
     >>> carbon_oxydes = janaf.find_species('C O'.split())
     >>> print(carbon_oxydes)
     ['C2H4O' 'C2O' 'C3O2' 'CF3OF' 'CO2' 'COCl2' 'COClF' 'COCl' 'COF2' 'COF'
      'CO' 'COS' 'Fe(CO)5' 'H2CO' 'HCOF' 'HCO' 'HNCO' 'NC101' 'Ni(CO)4']
+
     >>> # Get all hydrogen-ion species:
     >>> H_ions= janaf.find_species(['H'], charge='ion')
     >>> print(H_ions)
     ['AlOH-' 'AlOH+' 'BaOH+' 'BeH+' 'BeOH+' 'CaOH+' 'CH+' 'CsOH+' 'H2-' 'H2+'
      'H3O+' 'HBO-' 'HBO+' 'HBS+' 'HCO+' 'HD-' 'HD+' 'H-' 'H+' 'KOH+' 'LiOH+'
      'MgOH+' 'NaOH+' 'OH-' 'OH+' 'SiH+' 'SrOH+']
+
+    >>> # Only diatomic Na species:
+    >>> diatomic = janaf.find_species(['Na'], num_atoms=2, charge='all')
+    >>> print(diatomic)
+    ['Na2' 'NaBr' 'NaCl' 'NaF' 'NaH' 'NaO' 'NaO-']
     """
     janaf_dict = {}
     for line in open(f'{ROOT}chemcat/data/janaf_conversion.txt', 'r'):
@@ -365,6 +375,12 @@ def find_species(elements, state='gas', charge='neutral'):
             continue
 
         stoich = read_stoich(janaf_file=janaf_file)
+
+        if num_atoms is not None:
+            n_atoms = sum([val for key,val in stoich.items() if key!='e'])
+            if n_atoms != num_atoms:
+                continue
+
         if np.all(np.isin(elements, list(stoich.keys()))):
             species.append(molec)
     return np.array(species)

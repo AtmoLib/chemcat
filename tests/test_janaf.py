@@ -288,3 +288,7 @@ def test_find_species_neutral_and_ions():
     assert list(specs) == ['C2H4O', 'H2CO', 'HCOF', 'HCO', 'HCO+', 'HNCO']
 
 
+def test_find_species_num_atoms():
+    specs = janaf.find_species(['Na'], num_atoms=2, charge='all')
+    assert list(specs) == ['Na2', 'NaBr', 'NaCl', 'NaF', 'NaH', 'NaO', 'NaO-']
+
