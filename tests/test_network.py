@@ -214,8 +214,7 @@ def test_network_vmr_cea_priority():
     vmr = net.thermochemical_equilibrium()
 
     assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
-    np.testing.assert_allclose(vmr, expected_vmr_1200K)
-    np.testing.assert_allclose(net.vmr, expected_vmr_1200K)
+    np.testing.assert_allclose(net.vmr, expected_vmr_1200K_cea)
 
     expected_e_abundance = np.array(
         [2.88403150e-04, 1.0, 8.20351544e-02, 6.76082975e-05, 4.89778819e-04]
