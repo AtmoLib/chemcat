@@ -67,6 +67,7 @@ class Network(object):
         e_abundances={},
         e_scale={},
         e_ratio={},
+        e_source='asplund_2021',
         sources=['janaf', 'cea'],
     ):
         """
@@ -103,6 +104,13 @@ class Network(object):
             e_ratio = {'C_O': np.log10(0.8)}.
             These values modify the abundances on top of any custom
             metallicity, e_abundances, and e_scale.
+        e_source: String
+            Source of elemental composition used as base composition.
+            If value is 'asplund_2021' or 'asplund_2009', adopt the
+            solar elemental composition values from Asplund+2009 or
+            Asplund+2021, respectively.
+            Else, assume e_source is a path to a custom elemental
+            composition file.
         sources: List of strings
             Name of databases where to get the thermochemical properties
             (in order of priority).  Available options: 'janaf' or 'cea'.
@@ -194,8 +202,11 @@ class Network(object):
 
         self.elements, self.stoich_vals = u.stoich_matrix(stoich_data)
 
-        self.element_file = \
-            f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
+        # Setup input elemental composition:
+        if e_source == 'asplund_2009' or e_source == 'asplund_2021':
+            e_source = f'{u.ROOT}chemcat/data/{e_source}_solar_abundances.dat'
+
+        self.element_file = e_source
         base_data = u.read_elemental(self.element_file)
         self._base_composition = base_data[0]
         self._base_dex_abundances = base_data[1]
