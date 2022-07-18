@@ -199,7 +199,8 @@ def test_set_element_abundance_custom_e_ratio():
     sun_elements, sun_dex = u.read_elemental(element_file)
     elements = 'H He C N O'.split()
     e_abundances = u.set_element_abundance(
-        elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.6)})
+        elements, sun_elements, sun_dex, e_ratio={'C_O': 0.6},
+    )
     expected_abundance = np.array([
         1.0, 8.20351544e-02, 2.93867292e-04, 6.76082975e-05, 4.89778819e-04
     ])

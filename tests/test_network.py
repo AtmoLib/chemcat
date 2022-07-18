@@ -310,7 +310,7 @@ def test_network_vmr_update_e_scale():
 
 def test_network_vmr_update_e_ratio():
     net = cat.Network(net_pressure, net_temperature, net_molecules)
-    e_ratio = {'C_O': np.log10(0.8)}
+    e_ratio = {'C_O': 0.8}
     vmr = net.thermochemical_equilibrium(e_ratio=e_ratio)
 
     np.testing.assert_allclose(vmr, expected_vmr_e_ratio)
@@ -327,7 +327,7 @@ def test_network_vmr_update_e_ratio():
 def test_network_vmr_update_metal_e_ratio():
     net = cat.Network(net_pressure, net_temperature, net_molecules)
     metallicity = 1.0
-    e_ratio = {'C_O': np.log10(1.1)}
+    e_ratio = {'C_O': 1.1}
     vmr = net.thermochemical_equilibrium(
         metallicity=metallicity,
         e_ratio=e_ratio,

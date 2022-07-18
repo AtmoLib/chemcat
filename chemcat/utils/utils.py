@@ -149,8 +149,8 @@ def set_element_abundance(
         Set custom elemental abundances by scaling relative to another
         element.
         The dict contains the pair of elements joined by an underscore
-        and their ratio in dex units, e.g., for a C/O ratio of 0.8 set
-        e_ratio = {'C_O': np.log10(0.8)}.
+        and their ratio, e.g., for a C/O ratio of 0.8 set
+        e_ratio = {'C_O': 0.8}.
         These values scale on top of any custom metallicity,
         e_abundances, and e_scale.
 
@@ -195,7 +195,7 @@ def set_element_abundance(
 
     >>> # Custom carbon abundance by scaling to C/O = 0.8:
     >>> abund = u.set_element_abundance(
-    >>>     elements, sun_elements, sun_dex, e_ratio={'C_O': np.log10(0.8)},
+    >>>     elements, sun_elements, sun_dex, e_ratio={'C_O': 0.8},
     >>> )
     >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
     ['H: 1.0e+00', 'He: 8.2e-02', 'C: 3.9e-04', 'N: 6.8e-05', 'O: 4.9e-04']
@@ -220,10 +220,11 @@ def set_element_abundance(
         elemental_abundances[np.array(elements) == element] += fscale
 
     # Set custom elemental ratios:
-    for element, log_ratio in e_ratio.items():
+    for element, ratio in e_ratio.items():
         element1, element2 = element.split('_')
         idx1 = np.array(elements) == element1
         idx2 = np.array(elements) == element2
+        log_ratio = np.log10(ratio)
         elemental_abundances[idx1] = elemental_abundances[idx2] + log_ratio
 
     # Convert elemental log VMR (relative to H=12.0) to VMR (rel. to H=1.0):

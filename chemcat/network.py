@@ -100,8 +100,8 @@ class Network(object):
         e_ratio: Dictionary
             Custom elemental abundances scaled relative to another element.
             The dict contains the pair of elements joined by an underscore
-            and their ratio in dex units, e.g., for a C/O ratio of 0.8 set
-            e_ratio = {'C_O': np.log10(0.8)}.
+            and their ratio, e.g., for a C/O ratio of 0.8 set
+            e_ratio = {'C_O': 0.8}.
             These values modify the abundances on top of any custom
             metallicity, e_abundances, and e_scale.
         e_source: String
@@ -290,8 +290,8 @@ class Network(object):
         e_ratio: Dictionary
             Custom elemental abundances scaled relative to another element.
             The dict contains the pair of elements joined by an underscore
-            and their ratio in dex units, e.g., for a C/O ratio of 0.8 set
-            e_ratio = {'C_O': np.log10(0.8)}.
+            and their ratio, e.g., for a C/O ratio of 0.8 set
+            e_ratio = {'C_O': 0.8}.
             These values modify the abundances on top of any custom
             metallicity, e_abundances, and e_scale.
         savefile: String
@@ -461,7 +461,7 @@ def thermochemical_equilibrium(
 
     # Target elemental fractions (and charge) for conservation:
     b0 = element_rel_abundance / np.sum(element_rel_abundance)
-    # Total elemental abundance:
+    # Total elemental abundance as first guess for total species abundance:
     total_abundance = np.sum(b0)
 
     is_atom = element_rel_abundance > 0.0
@@ -489,7 +489,7 @@ def thermochemical_equilibrium(
     vmr = np.zeros((nlayers, nspecies))
     mu = np.zeros(nspecies)  # chemical potential/RT
     h_ts = thermo_eval(temperature, gibbs_funcs).T + np.log(pressure)
-    dlnns = np.zeros(nspecies)
+    delta_ln_vmr = np.zeros(nspecies)
     tolx = tolf = 2.22e-16
 
     # Compute thermochemical equilibrium abundances at each layer:
@@ -501,7 +501,8 @@ def thermochemical_equilibrium(
             nspecies, nequations, stoich_vals, b0,
             temperature[i], h_ts[:,i], pilag,
             abundances, max_abundances, total_abundance,
-            mu, x, dlnns, tolx, tolf)
+            mu, x, delta_ln_vmr, tolx, tolf,
+        )
 
         if exit_status == 1:
             print(f"Gibbs minimization failed at layer {i}")
