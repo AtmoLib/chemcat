@@ -9,6 +9,7 @@ __all__ = [
     'de_aliasing',
     'resolve_sources',
     'write_file',
+    'read_file',
 ]
 
 import os
@@ -355,7 +356,7 @@ def resolve_sources(species, sources):
 
 def write_file(file, species, pressure, temperature, vmr):
     """
-    Write results to file.
+    Write pressure, temperature, and vmr values to file.
 
     Parameters
     ----------
@@ -368,7 +369,7 @@ def write_file(file, species, pressure, temperature, vmr):
     temperature: 1D float iterable
         Atmospheric temperature profile (kelvin).
     vmr: 2D float iterable
-        Atmospheric volume mixing ratios (of shape [nlayers,nspecies]).
+        Atmospheric volume mixing ratios, of shape [nspecies, nlayers].
 
     Examples
     --------
@@ -381,33 +382,66 @@ def write_file(file, species, pressure, temperature, vmr):
     >>> molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
     >>> net = cat.Network(pressure, temperature, molecules)
     >>> vmr = net.thermochemical_equilibrium()
+
+    >>> # Save results to file:
     >>> cat.utils.write_file(
-    >>>     'output_file.dat', net.species, pressure, temperature, vmr,
+    >>>     'chemcat_chemistry.dat', net.species, pressure, temperature, vmr,
     >>> )
+    >>> # Read from file:
+    >>> d = cat.utils.read_file('chemcat_chemistry.dat')
     """
-    fout = open(file, 'w+')
+    str_species = ' '.join(f'{spec:<15}' for spec in species)
 
-    # Header info:
-    fout.write(
-        '# TEA output file with abundances calculated in '
-        'thermochemical equilibrium.\n'
-        '# Units: pressure (bar), temperature (K), abundance '
-        '(volume mixing ratio).\n\n')
+    with open(file, 'w') as f:
+        # Header:
+        f.write(
+            '# chemcat chemistry composition calculation '
+            '(bar, K, volume mixing ratios)\n'
+            f'# pressure   temperature  {str_species.rstrip()}\n\n'
+        )
+        # Per-layer data:
+        for press, temp, vmr_layer in zip(pressure, temperature, vmr):
+            str_vmr = ' '.join(f'{q:<15.8e}' for q in vmr_layer)
+            f.write(f'{press:.8e}  {temp:8.2f}  {str_vmr}\n')
 
-    # List of species:
-    fout.write('#SPECIES\n')
-    fout.write(' '.join(spec for spec in species))
-    fout.write('\n\n')
 
-    # Atmospheric data:
-    fout.write('#TEADATA\n')
-    fout.write('#Pressure   Temp     ')
-    fout.write(''.join(f'{spec:<11}' for spec in species) + '\n')
+def read_file(file):
+    r"""
+    Read a chemcat file.
 
-    nlayers = len(pressure)
-    for i in range(nlayers):
-        fout.write(f'{pressure[i]:.4e}  {temperature[i]:7.2f} ')
-        for abund in vmr[i]:
-            fout.write(f'{abund:11.4e}')
-        fout.write('\n')
-    fout.close()
+    Parameters
+    ----------
+    file: String
+        Path to file to read.
+
+    Returns
+    -------
+    species: 1D string list
+        Names of atmospheric species.
+    pressure: 1D float array
+        Atmospheric pressure profile (bar).
+    temperature: 1D float array
+        Atmospheric temperature profile (kelvin).
+    vmr: 2D float array
+        Atmospheric volume mixing ratios, of shape [nspecies, nlayers].
+
+    Examples
+    --------
+    >>> import chemcat.utils as u
+
+    >>> # Continuing from example in u.write_file(),
+    >>> # Read from file:
+    >>> species, pressure, temperature, vmr = u.read_file(
+    >>>     'chemcat_chemistry.dat')
+    """
+    with open(file, 'r') as f:
+        _= f.readline()
+        header = f.readline()
+    species = header.split()[3:]
+
+    data = np.loadtxt(file, unpack=True)
+    pressure = data[0]
+    temperature = data[1]
+    vmr = data[2:].T
+
+    return species, pressure, temperature, vmr

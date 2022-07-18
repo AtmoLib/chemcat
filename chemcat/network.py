@@ -2,6 +2,7 @@
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
+    'Thermo_Prop',
     'Network',
     'thermo_eval',
     'thermochemical_equilibrium',
@@ -216,19 +217,28 @@ class Network(object):
 
 
     def heat_capacity(self, temperature=None):
+        """
+        Evaluate the heat capacity of each species in the network
+        at the given temperature (default to self.temperature if needed).
+        """
         if temperature is None:
             temperature = self.temperature
         return thermo_eval(temperature, self._heat_capacity)
 
 
     def gibbs_free_energy(self, temperature=None):
+        """
+        Evaluate the Gibbs free energy of each species in the network
+        at the given temperature (default to self.temperature if needed).
+        """
         if temperature is None:
             temperature = self.temperature
         return thermo_eval(temperature, self._gibbs_free_energy)
 
 
     def thermochemical_equilibrium(
-        self, temperature=None,
+        self,
+        temperature=None,
         metallicity=None,
         e_abundances=None,
         e_scale=None,
@@ -236,8 +246,44 @@ class Network(object):
         savefile=None,
     ):
         """
-        Compute thermochemical-equilibrium abundances, updating the
-        atmospheric properties if requested.
+        Compute thermochemical-equilibrium abundances, update the
+        atmospheric properties according to any non-None argument.
+
+        Parameters
+        ----------
+        temperature: 1D float iterable
+            Temperature profile (Kelvin).
+            Must have same number of layers as self.pressure.
+        metallicity: Float
+            Scaling factor for all elemental species except H and He.
+            Dex units relative to the sun (e.g., solar is metallicity=0.0,
+            10x solar is metallicity=1.0).
+        e_abundances: Dictionary
+            Elemental abundances for custom species set as
+            {element: abundance} pairs in dex units relative to H=12.0.
+            These values override metallicity.
+        e_scale: Dictionary
+            Custom elemental abundances scaled relative to solar values.
+            The dict contains the name of the element and their custom
+            scaling factor in dex units, e.g., for 2x solar carbon set
+            e_scale = {'C': np.log10(2.0)}.
+            This argument modifies the abundances on top of any custom
+            metallicity and e_abundances.
+        e_ratio: Dictionary
+            Custom elemental abundances scaled relative to another element.
+            The dict contains the pair of elements joined by an underscore
+            and their ratio in dex units, e.g., for a C/O ratio of 0.8 set
+            e_ratio = {'C_O': np.log10(0.8)}.
+            These values modify the abundances on top of any custom
+            metallicity, e_abundances, and e_scale.
+        savefile: String
+            If not None, store vmr outputs to given file path.
+
+        Returns
+        -------
+        vmr: 2D float array
+            Species volume mixing ratios in thermochemical equilibrium
+            of shape [nlayers, nspecies].
         """
         if temperature is not None:
             if np.shape(temperature) != np.shape(self.pressure):
@@ -429,7 +475,7 @@ def thermochemical_equilibrium(
     tolx = tolf = 2.22e-16
 
     # Compute thermochemical equilibrium abundances at each layer:
-    # (Go down the layers and then sweep back in case the first run
+    # (Go down the layers and then sweep back up in case the first run
     # didn't get the global minimum)
     for i in itertools.chain(range(nlayers), reversed(range(nlayers))):
         abundances[abundances <= 0] = 1e-300

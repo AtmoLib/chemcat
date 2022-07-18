@@ -206,18 +206,51 @@ def test_set_element_abundance_custom_e_ratio():
     np.testing.assert_allclose(e_abundances, expected_abundance)
 
 
-def test_write_file(tmpdir):
+def test_write_file_read_file(tmpdir):
     atm_file = "atmfile.dat"
     atm = f'{tmpdir}/{atm_file}'
 
-    # Some default values:
     nlayers = 11
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
     molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
-
     net = cat.Network(pressure, temperature, molecules)
     vmr = net.thermochemical_equilibrium()
+
     u.write_file(atm, net.species, pressure, temperature, vmr)
     assert atm_file in os.listdir(str(tmpdir))
-    # TBD: Open file and check values
+
+    # Now, open file and check values:
+    species, pressure, temperature, read_vmr = u.read_file(atm)
+    np.testing.assert_equal(species, molecules)
+    np.testing.assert_allclose(pressure, pressure)
+    np.testing.assert_allclose(temperature, temperature)
+    np.testing.assert_allclose(read_vmr, vmr)
+
+
+
+def test_write_file_read_file_tiny_abundances(tmpdir):
+    atm_file = "atmfile.dat"
+    atm = f'{tmpdir}/{atm_file}'
+
+    nlayers = 11
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    net = cat.Network(pressure, temperature, molecules)
+    vmr = net.thermochemical_equilibrium()
+    # Very small values change the print format:
+    vmr[0:0] = 1.0e-200
+    vmr[:,3] = 2.0e-200
+    vmr[3,:] = 3.0e-200
+
+    u.write_file(atm, net.species, pressure, temperature, vmr)
+    assert atm_file in os.listdir(str(tmpdir))
+    # Now, open file and check values:
+    species, pressure, temperature, read_vmr = u.read_file(atm)
+    np.testing.assert_allclose(pressure, pressure)
+    np.testing.assert_allclose(temperature, temperature)
+    np.testing.assert_equal(species, molecules)
+    np.testing.assert_allclose(read_vmr, vmr)
+
+
