@@ -15,7 +15,7 @@ import numpy as np
 import scipy.interpolate as si
 import scipy.constants as sc
 
-from . import utils as u
+from .. import utils as u
 
 
 def is_in(species):

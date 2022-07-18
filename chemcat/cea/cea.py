@@ -16,7 +16,7 @@ from collections.abc import Iterable
 from more_itertools import sliced
 import numpy as np
 
-from .utils import ROOT
+from ..utils import ROOT
 sys.path.append(f'{ROOT}chemcat/lib')
 import _utils as u
 
