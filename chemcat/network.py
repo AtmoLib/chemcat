@@ -182,6 +182,13 @@ class Network(object):
         self.provenance = source_names[idx_valid]
         self.species = np.array(input_species)[idx_valid]
 
+        if None in source_names:
+            missing_species = np.array(input_species)[~idx_valid]
+            print(
+                'These input species were not found in any database:'
+                f'\n  {missing_species}'
+            )
+
         nspecies = len(self.species)
         self._heat_capacity = np.zeros(nspecies, object)
         self._gibbs_free_energy = np.zeros(nspecies, object)

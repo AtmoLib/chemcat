@@ -96,14 +96,13 @@ def test_network_init():
 
 
 def test_network_mixed_sources():
-    # At least three things are being checked here:
+    # At least two things are being checked here:
     # - COOH only exists in cea,
     # - H2O2 is named HOOH in janaf,
-    # - FeH is missing from both sources.
     nlayers = 81
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
-    molecules = ['H2O', 'FeH', 'H2O2', 'COOH', 'H']
+    molecules = ['H2O', 'H2O2', 'COOH', 'H']
     sources = 'janaf', 'cea'
     net = cat.Network(
         pressure, temperature, molecules, sources=sources,
@@ -120,8 +119,34 @@ def test_network_mixed_sources():
     np.testing.assert_equal(net.pressure, pressure)
     np.testing.assert_equal(net.temperature, temperature)
     np.testing.assert_equal(net.input_species, molecules)
-    assert net.metallicity == 0.0
-    assert net.e_abundances == {}
+    np.testing.assert_equal(net.species, expected_species)
+    np.testing.assert_equal(net.provenance, expected_provenance)
+    np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
+
+
+def test_network_missing_species(capfd):
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = ['H2O', 'H2O2', 'FeH', 'COOH', 'H']
+    net = cat.Network(pressure, temperature, molecules)
+
+    expected_stoich_vals = np.array([
+        [0, 2, 1],
+        [0, 2, 2],
+        [1, 1, 2],
+        [0, 1, 0]])
+    expected_provenance = np.array(['janaf', 'janaf', 'cea', 'janaf'])
+    expected_species = ['H2O', 'H2O2', 'COOH', 'H']
+
+    captured = capfd.readouterr()
+    assert 'input species were not found in any database' in captured.out
+    assert 'FeH' in captured.out
+
+    np.testing.assert_equal(net.pressure, pressure)
+    np.testing.assert_equal(net.temperature, temperature)
+    np.testing.assert_equal(net.input_species, molecules)
     np.testing.assert_equal(net.species, expected_species)
     np.testing.assert_equal(net.provenance, expected_provenance)
     np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
@@ -184,8 +209,11 @@ def test_network_gibbs_default_temp():
     np.testing.assert_equal(net.temperature, net_temperature)
 
 
-def test_network_vmr_default():
-    net = cat.Network(net_pressure, net_temperature, net_molecules)
+def test_network_vmr_e_source_asplund():
+    net = cat.Network(
+        net_pressure, net_temperature, net_molecules,
+        e_source='asplund_2021',
+    )
     vmr = net.thermochemical_equilibrium()
 
     assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
