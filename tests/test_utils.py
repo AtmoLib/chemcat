@@ -255,3 +255,103 @@ def test_write_file_read_file_tiny_abundances(tmpdir):
     np.testing.assert_allclose(read_vmr, vmr)
 
 
+def test_resolve_colors_defaults():
+    species = 'H He C H2 CH4 CO CO2'.split()
+    colors = u.resolve_colors(species)
+    assert colors['H'] == 'blue'
+    assert colors['He'] == 'olive'
+    assert colors['C'] == 'salmon'
+    assert colors['H2'] == 'deepskyblue'
+    assert colors['CH4'] == 'darkorange'
+    assert colors['CO'] == 'limegreen'
+    assert colors['CO2'] == 'red'
+
+
+def test_resolve_colors_ions():
+    species = 'H He C H2 CH4 CO CO2 e- H+ H- H3+'.split()
+    colors = u.resolve_colors(species)
+    # Ions not really counted as extra species-color pairs:
+    assert 'H+' not in colors
+    assert 'H-' not in colors
+    # But neutral version of ions exist indeed:
+    assert colors['e'] == 'darkgreen'
+    assert colors['H3'] == 'royalblue'
+
+    assert colors['H'] == 'blue'
+    assert colors['He'] == 'olive'
+    assert colors['C'] == 'salmon'
+    assert colors['H2'] == 'deepskyblue'
+    assert colors['CH4'] == 'darkorange'
+    assert colors['CO'] == 'limegreen'
+    assert colors['CO2'] == 'red'
+
+
+def test_resolve_colors_custom_list():
+    species = 'H He C H2 CH4 CO CO2'.split()
+    color_list = 'red green blue black orange brown magenta'.split()
+    colors = u.resolve_colors(species, color_list=color_list)
+    # If only color_list is input, do not default color_dict:
+    assert colors['H'] == 'red'
+    assert colors['He'] == 'green'
+    assert colors['C'] == 'blue'
+    assert colors['H2'] == 'black'
+    assert colors['CH4'] == 'orange'
+    assert colors['CO'] == 'brown'
+    assert colors['CO2'] == 'magenta'
+
+
+def test_resolve_colors_more_species_than_colors():
+    species = 'H He C H2 CH4 CO CO2'.split()
+    color_list = 'red green blue black'.split()
+    colors = u.resolve_colors(species, color_list=color_list)
+    assert colors['H'] == 'red'
+    assert colors['He'] == 'green'
+    assert colors['C'] == 'blue'
+    assert colors['H2'] == 'black'
+    # Colors cycle over remaining species:
+    assert colors['CH4'] == 'red'
+    assert colors['CO'] == 'green'
+    assert colors['CO2'] == 'blue'
+
+
+def test_resolve_colors_not_all_colors_in_dict():
+    species = 'H He C H2 CH4 CO CO2'.split()
+    color_dict = {
+        'H': 'red',
+        'He': 'green',
+        'H2': 'blue',
+    }
+    colors = u.resolve_colors(species, color_dict=color_dict)
+    # Colors as in input color_dict:
+    assert colors['H'] == 'red'
+    assert colors['He'] == 'green'
+    assert colors['H2'] == 'blue'
+    # Remaining species get assigned a color by default from u.COLORS:
+    assert colors['C'] == 'royalblue'
+    assert colors['CH4'] == 'darkorange'
+    assert colors['CO'] == 'darkgreen'
+    assert colors['CO2'] == 'magenta'
+
+
+@pytest.mark.skip(reason='TBI')
+def test_plot_vmr():
+    nlayers = 81
+    temp = 1700.0
+    temperature = np.tile(temp, nlayers)
+    pressure = np.logspace(-10, 3, nlayers)
+
+    species = (
+        'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O'.split()
+        + 'e- H- H+ H2+ He+'.split()
+        + 'Na Na- Na+ K K- K+'.split()
+        #+ 'Mg Mg+ Fe Fe+'.split()
+        #+ 'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+'.split()
+        + 'H3O+'.split()
+    )
+
+    net = cat.Network(pressure, temperature, species)
+    vmr = net.thermochemical_equilibrium()
+    species = net.species
+    ax = u.plot_vmr(pressure, vmr, species, vmr_range=(1e-30, 3))
+
+
