@@ -46,6 +46,9 @@ package_data = {
     ]
 }
 
+with open('README.md', 'r') as f:
+    readme = f.read()
+
 setup(
     name = 'chemcat',
     version = get_version('chemcat'),
@@ -64,8 +67,8 @@ setup(
         ],
     license = 'GPLv2',
     description = 'Chemistry Calculator for Atmospheres',
-    #long_description = long_desc,
-    #long_description_content_type = 'text/markdown',
+    long_description = long_description,
+    long_description_content_type = 'text/markdown',
     include_dirs = inc,
     ext_modules = extensions,
 )

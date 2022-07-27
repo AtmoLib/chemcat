@@ -70,7 +70,7 @@ class Network(object):
         e_source='asplund_2021',
         sources=['janaf', 'cea'],
     ):
-        """
+        r"""
         Parameters
         ----------
         pressure: 1D float iterable
@@ -118,50 +118,21 @@ class Network(object):
         Examples
         --------
         >>> import chemcat as cat
+        >>> import chemcat.utils as u
         >>> import numpy as np
 
         >>> nlayers = 81
         >>> temperature = np.tile(1200.0, nlayers)
         >>> pressure = np.logspace(-8, 3, nlayers)
-        >>> HCNO_molecules = (
-        >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O').split()
-        >>> net = cat.Network(pressure, temperature, HCNO_molecules)
+        >>> molecules = (
+        >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O').split()
+        >>> net = cat.Network(pressure, temperature, molecules)
 
         >>> # Compute abundances in thermochemical equilibrium:
         >>> vmr = net.thermochemical_equilibrium()
-        >>> species = list(net.species)
 
-        >>> cols = {
-        >>>     'H': 'blue',
-        >>>     'H2': 'deepskyblue',
-        >>>     'He': 'olive',
-        >>>     'H2O': 'navy',
-        >>>     'CH4': 'orange',
-        >>>     'CO': 'limegreen',
-        >>>     'CO2': 'red',
-        >>>     'NH3': 'magenta',
-        >>>     'HCN': '0.55',
-        >>>     'N2': 'gold',
-        >>>     'OH': 'steelblue',
-        >>>     'C': 'salmon',
-        >>>     'N': 'darkviolet',
-        >>>     'O': 'greenyellow',
-        >>> }
-
-        >>> plt.figure('Plotty McPlt dot plot', (8,4.5))
-        >>> plt.clf()
-        >>> plt.subplots_adjust(0.09, 0.12, 0.89, 0.94)
-        >>> ax = plt.subplot(111)
-        >>> for name in species:
-        >>>     plt.loglog(
-        >>>         vmr[:,species.index(name)], pressure,
-        >>>         label=name, lw=2.0, color=cols[name])
-        >>> plt.ylim(np.amax(pressure), np.amin(pressure))
-        >>> plt.xlim(1e-30, 2)
-        >>> plt.ylabel('Pressure (bar)', fontsize=12)
-        >>> plt.legend(loc=(1.01,0.01), fontsize=9.0)
-        >>> plt.xlabel('Volume mixing ratio', fontsize=12)
-        >>> plt.title(f'{temperature[0]} K', fontsize=12)
+        >>> # See results:
+        >>> ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=(1e-30,2))
 
         >>> # Compute heat capacity:
         >>> cp = net.heat_capacity()
@@ -363,14 +334,16 @@ def thermo_eval(temperature, thermo_funcs):
     --------
     >>> import chemcat as cat
     >>> import chemcat.janaf as janaf
+    >>> import chemcat.utils as u
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
 
-    >>> molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    >>> molecules = (
+    >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O'.split()
     >>> janaf_data = janaf.setup_network(molecules)
     >>> species = janaf_data[0]
-    >>> heat_funcs = janaf_data[2]
-    >>> gibbs_funcs = janaf_data[3]
+    >>> heat_funcs = janaf_data[1]
+    >>> gibbs_funcs = janaf_data[2]
 
     >>> temperature = 1500.0
     >>> temperatures = np.arange(100.0, 4501.0, 10)
@@ -378,30 +351,15 @@ def thermo_eval(temperature, thermo_funcs):
     >>> cp2 = cat.thermo_eval(temperatures, heat_funcs)
     >>> gibbs = cat.thermo_eval(temperatures, gibbs_funcs)
 
-    >>> cols = {
-    >>>     'H': 'blue',
-    >>>     'H2': 'deepskyblue',
-    >>>     'He': 'olive',
-    >>>     'H2O': 'navy',
-    >>>     'CH4': 'orange',
-    >>>     'CO': 'limegreen',
-    >>>     'CO2': 'red',
-    >>>     'NH3': 'magenta',
-    >>>     'HCN': '0.55',
-    >>>     'N2': 'gold',
-    >>>     'OH': 'steelblue',
-    >>>     'C': 'salmon',
-    >>>     'N': 'darkviolet',
-    >>>     'O': 'greenyellow',
-    >>> }
-
     >>> nspecies = len(species)
     >>> plt.figure('Heat capacity, Gibbs free energy', (8.5, 4.5))
     >>> plt.clf()
     >>> plt.subplot(121)
     >>> for j in range(nspecies):
     >>>     label = species[j]
-    >>>     plt.plot(temperatures, cp2[:,j], label=label, c=cols[label])
+    >>>     plt.plot(
+    >>>         temperatures, cp2[:,j], label=label, c=u.COLOR_DICT[label],
+    >>>     )
     >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
     >>> plt.plot(np.tile(temperature,nspecies), cp1, 'ob', ms=4, zorder=-1)
     >>> plt.xlabel('Temperature (K)')
@@ -410,7 +368,9 @@ def thermo_eval(temperature, thermo_funcs):
     >>> plt.subplot(122)
     >>> for j in range(nspecies):
     >>>     label = species[j]
-    >>>     plt.plot(temperatures, gibbs[:,j], label=label, c=cols[label])
+    >>>     plt.plot(
+    >>>         temperatures, gibbs[:,j], label=label, c=u.COLOR_DICT[label],
+    >>>     )
     >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
     >>> plt.legend(loc='upper right', fontsize=8)
     >>> plt.xlabel('Temperature (K)')
@@ -468,10 +428,11 @@ def thermochemical_equilibrium(
     # Maximum abundance reachable by each species
     # (i.e., species takes all available atoms)
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.simplefilter('ignore')
         max_abundances = np.array([
             np.nanmin((b0/is_atom)[stoich>0] / stoich[stoich>0])
-            for stoich in stoich_vals])
+            for stoich in stoich_vals
+        ])
 
     total_natoms = np.sum(stoich_vals*is_atom, axis=1)
     electron_index = total_natoms == 0
@@ -509,6 +470,4 @@ def thermochemical_equilibrium(
         vmr[i] = abundances / np.sum(abundances[~electron_index])
 
     return vmr
-
-
 
