@@ -34,6 +34,7 @@ will automatically install the following required Python software:
 
 * numpy (version 1.19.1+)
 * scipy (version 1.5.2+)
+* matplotlib (version 3.5.1+)
 * more-itertools (version 8.4.0+)
 
 .. _install:
