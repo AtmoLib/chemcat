@@ -60,7 +60,7 @@ setup(
     install_requires = [
         'numpy>=1.19.1',
         'scipy>=1.5.2',
-        'matplotlib>=3.5.1',
+        'matplotlib>=3.3.4',
         'more-itertools>=8.4.0',
         ],
     tests_require = [
