@@ -47,7 +47,7 @@ package_data = {
 }
 
 with open('README.md', 'r') as f:
-    readme = f.read()
+    long_description = f.read()
 
 setup(
     name = 'chemcat',
