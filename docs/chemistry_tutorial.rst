@@ -138,7 +138,7 @@ which you can query at any point:
      4.89778819e-04]
     
     Elemental composition source:
-    /Users/pato/Dropbox/IWF/projects/2022_chemcat/chemcat/chemcat/data/asplund_2021_solar_abundances.dat
+    /Users/user/envs/python36/chemcat/data/asplund_2021_solar_abundances.dat
     
     
     Molecular composition:
