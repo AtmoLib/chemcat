@@ -41,10 +41,13 @@ extensions = [
 
 package_data = {
     'chemcat': [
-        'data/janaf_conversion.txt',
+        'data/*',
         'data/janaf/*',
     ]
 }
+
+with open('README.md', 'r') as f:
+    long_description = f.read()
 
 setup(
     name = 'chemcat',
@@ -57,6 +60,7 @@ setup(
     install_requires = [
         'numpy>=1.19.1',
         'scipy>=1.5.2',
+        'matplotlib>=3.3.4',
         'more-itertools>=8.4.0',
         ],
     tests_require = [
@@ -64,8 +68,8 @@ setup(
         ],
     license = 'GPLv2',
     description = 'Chemistry Calculator for Atmospheres',
-    #long_description = long_desc,
-    #long_description_content_type = 'text/markdown',
+    long_description = long_description,
+    long_description_content_type = 'text/markdown',
     include_dirs = inc,
     ext_modules = extensions,
 )

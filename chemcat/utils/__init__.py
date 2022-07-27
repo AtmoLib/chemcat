@@ -1,21 +1,9 @@
 # Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
-__all__ = [
-    'cea',
-    'janaf',
-    'utils',
-]
+from .utils import *
 
-from .network import *
-from . import cea
-from . import janaf
-from . import utils
-from .version import __version__
-
-__all__ += (
-    network.__all__
-)
+__all__ = utils.__all__
 
 
 # Clean up top-level namespace--delete everything that isn't in __all__

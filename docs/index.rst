@@ -18,9 +18,9 @@ chemcat: Chemistry Calculator for Atmospheres
 
 -------------------------------------------------------------------
 
-:Author:        Patricio Cubillos and Jasmina Blecic (see :ref:`team`)
-:Contact:       `patricio.cubillos[at]oeaw.ac.at`_
+:Author:        Jasmina Blecic and Patricio Cubillos (see :ref:`team`)
 :Contact:       `jasmina[at]nyu.edu`_
+:Contact:       `patricio.cubillos[at]oeaw.ac.at`_
 :Organizations: `Space Research Institute (IWF) <http://iwf.oeaw.ac.at/>`_
 :Web Site:      https://github.com/AtmoLib/chemcat
 :Date:          |today|
@@ -31,9 +31,13 @@ chemcat: Chemistry Calculator for Atmospheres
 Features
 ========
 
-``chemcat`` is a tool to compute atmospheric chemistry compositions and other thermochemical properties.   The following features are available when running ``chemcat``:
+``chemcat`` is a tool to compute atmospheric chemistry compositions
+and other thermochemical properties.  The following features are
+available when running ``chemcat``:
 
-- Compute Thermochemical-equilibrium Chemistry via Gibbs Free-energy Optimization
+- Compute Thermochemical-equilibrium Chemistry via Gibbs Free-energy
+  Optimization including charge conservation
+- Set custom network of species in the system
 - Incorporate NIST-JANAF and NASA-ThermoBuild databases
 - Compute heat capacities for a mixture of gasses
 
@@ -46,20 +50,18 @@ All of these people have made a direct or indirect contribution to
 ``chemcat``, and in many instances have been fundamental in the
 development of this package.
 
-- `Patricio Cubillos <https://github.com/pcubillos>`_ (IWF) `patricio.cubillos[at]oeaw.ac.at`_
 - Jasmina Blecic (NYU-Abu Dhabi)
+- `Patricio Cubillos <https://github.com/pcubillos>`_ (IWF) `patricio.cubillos[at]oeaw.ac.at`_
 
 Documentation
 =============
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    get_started
-   mcmc_tutorial
-   ns_tutorial
-   fit_tutorial
-   time_averaging
+   chemistry_tutorial
+   database_tutorial
    references
    api
    contributing

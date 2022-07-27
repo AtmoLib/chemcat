@@ -1,220 +1,367 @@
-# Copyright (c) 2022 Cubillos and Blecic
+# Copyright (c) 2022 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 import os
-from pathlib import Path
-import sys
+
 import numpy as np
+import pytest
 
-ROOT = str(Path(__file__).parents[1]) + os.path.sep
-sys.path.append(ROOT+'chemcat')
 import chemcat as cat
+import chemcat.janaf as janaf
+import chemcat.utils as u
+
+from conftest import *
 
 
-def test_get_janaf_names_single():
-    janaf_species = cat.get_janaf_names('H2O')
-    assert len(janaf_species) == 1
-    assert janaf_species[0] == 'H-064.txt'
+# Some default values:
+nlayers = 11
+net_temperature = np.tile(1200.0, nlayers)
+net_pressure = np.logspace(-8, 3, nlayers)
+net_molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
 
 
-def test_get_janaf_names_multiple():
-    species = 'H2O e- H+'.split()
-    janaf_species = cat.get_janaf_names(species)
-    assert len(janaf_species) == len(species)
-    assert janaf_species[0] == 'H-064.txt'
-    assert janaf_species[1] == 'D-020.txt'
-    assert janaf_species[2] == 'H-002.txt'
+def test_thermo_eval_heat_capacity_single_temp():
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    janaf_data = janaf.setup_network(molecules)
+    heat_capacity = janaf_data[1]
+    temperature = 1500.0
+    cp = cat.thermo_eval(temperature, heat_capacity)
+
+    expected_cp = np.array([
+        5.6636252 , 10.41029396,  4.23563153,  7.02137982,  8.00580904,
+        4.19064967,  3.88455652,  6.65454913,  3.95900511,  2.49998117,
+        2.49998117,  2.5033488 ,  2.49998117,  2.50707724])
+    np.testing.assert_allclose(cp, expected_cp)
 
 
-def test_get_janaf_names_gas_over_ref():
-    janaf_species = cat.get_janaf_names('Na')
-    assert janaf_species[0] == 'Na-005.txt'
+def test_thermo_eval_heat_capacity_temp_array():
+    molecules = 'H2O CH4 CO C He'.split()
+    janaf_data = janaf.setup_network(molecules)
+    heat_capacity = janaf_data[1]
+    temperatures = np.arange(100.0, 4501.0, 200.0)
+    cp = cat.thermo_eval(temperatures, heat_capacity)
+
+    np.testing.assert_allclose(cp, expected_cp)
 
 
-def test_get_janaf_names_ref_when_no_gas():
-    janaf_species = cat.get_janaf_names('H2')
-    assert janaf_species[0] == 'H-050.txt'
+def test_thermo_eval_gibbs_free_energy_temp_array():
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    janaf_data = janaf.setup_network(molecules)
+    gibbs_funcs = janaf_data[2]
+    temperatures = np.arange(100.0, 4101.0, 500.0)
+    gibbs = cat.thermo_eval(temperatures, gibbs_funcs)
+
+    np.testing.assert_allclose(gibbs, expected_gibbs)
 
 
-def test_get_janaf_names_missing():
-    species = 'H2O H2O+'.split()
-    janaf_species = cat.get_janaf_names(species)
-    assert janaf_species[0] == 'H-064.txt'
-    assert janaf_species[1] is None
-
-
-def test_read_janaf():
-    janaf_file = 'H-064.txt'  # Water
-    temps, heat = cat.read_janaf(janaf_file)
-
-    expected_temp = np.array([
-         100.  ,  200.  ,  298.15,  300.  ,  400.  ,  500.  ,  600.  ,
-         700.  ,  800.  ,  900.  , 1000.  , 1100.  , 1200.  , 1300.  ,
-        1400.  , 1500.  , 1600.  , 1700.  , 1800.  , 1900.  , 2000.  ,
-        2100.  , 2200.  , 2300.  , 2400.  , 2500.  , 2600.  , 2700.  ,
-        2800.  , 2900.  , 3000.  , 3100.  , 3200.  , 3300.  , 3400.  ,
-        3500.  , 3600.  , 3700.  , 3800.  , 3900.  , 4000.  , 4100.  ,
-        4200.  , 4300.  , 4400.  , 4500.  , 4600.  , 4700.  , 4800.  ,
-        4900.  , 5000.  , 5100.  , 5200.  , 5300.  , 5400.  , 5500.  ,
-        5600.  , 5700.  , 5800.  , 5900.  , 6000.  ])
-    expected_heat = np.array([
-        33.299, 33.349, 33.59 , 33.596, 34.262, 35.226, 36.325, 37.495,
-        38.721, 39.987, 41.268, 42.536, 43.768, 44.945, 46.054, 47.09 ,
-        48.05 , 48.935, 49.749, 50.496, 51.18 , 51.823, 52.408, 52.947,
-        53.444, 53.904, 54.329, 54.723, 55.089, 55.43 , 55.748, 56.044,
-        56.323, 56.583, 56.828, 57.058, 57.276, 57.48 , 57.675, 57.859,
-        58.033, 58.199, 58.357, 58.507, 58.65 , 58.787, 58.918, 59.044,
-        59.164, 59.275, 59.39 , 59.509, 59.628, 59.746, 59.864, 59.982,
-        60.1  , 60.218, 60.335, 60.453, 60.571])
-    np.testing.assert_allclose(temps, expected_temp)
-    np.testing.assert_allclose(heat, expected_heat)
-
-
-def test_read_janaf_missing_cp_values():
-    janaf_file = 'D-020.txt'  # electron
-    temps, heat = cat.read_janaf(janaf_file)
-    expected_temp = np.array([
-         298.15,  300.  ,  350.  ,  400.  ,  450.  ,  500.  ,  600.  ,
-         700.  ,  800.  ,  900.  , 1000.  , 1100.  , 1200.  , 1300.  ,
-        1400.  , 1500.  , 1600.  , 1700.  , 1800.  , 1900.  , 2000.  ,
-        2100.  , 2200.  , 2300.  , 2400.  , 2500.  , 2600.  , 2700.  ,
-        2800.  , 2900.  , 3000.  , 3100.  , 3200.  , 3300.  , 3400.  ,
-        3500.  , 3600.  , 3700.  , 3800.  , 3900.  , 4000.  , 4100.  ,
-        4200.  , 4300.  , 4400.  , 4500.  , 4600.  , 4700.  , 4800.  ,
-        4900.  , 5000.  , 5100.  , 5200.  , 5300.  , 5400.  , 5500.  ,
-        5600.  , 5700.  , 5800.  , 5900.  , 6000.  ])
-    expected_heat = np.array([
-        20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786,
-        20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786,
-        20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786,
-        20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786,
-        20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786,
-        20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786,
-        20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786, 20.786,
-        20.786, 20.786, 20.786, 20.786, 20.786])
-    np.testing.assert_allclose(temps, expected_temp)
-    np.testing.assert_allclose(heat, expected_heat)
-
-
-def test_read_janaf_stoich_from_species_neutral():
-    stoich = cat.read_janaf_stoich('H')
-    assert len(stoich) == 1
-    assert stoich['H'] == 1.0
-
-    stoich = cat.read_janaf_stoich('H2')
-    assert len(stoich) == 1
-    assert stoich['H'] == 2.0
-
-    stoich = cat.read_janaf_stoich('H2O')
-    assert len(stoich) == 2
-    assert stoich['H'] == 2.0
-    assert stoich['O'] == 1.0
-
-
-def test_read_janaf_stoich_from_species_ions():
-    stoich = cat.read_janaf_stoich('e-')
-    assert len(stoich) == 1
-    assert stoich['e'] == 1.0
-
-    stoich = cat.read_janaf_stoich('H-')
-    assert len(stoich) == 2
-    assert stoich['H'] == 1.0
-    assert stoich['e'] == 1.0
-
-    stoich = cat.read_janaf_stoich('H+')
-    assert len(stoich) == 2
-    assert stoich['H'] == 1.0
-    assert stoich['e'] == -1.0
-
-    stoich = cat.read_janaf_stoich('H3O+')
-    assert len(stoich) == 3
-    assert stoich['H'] == 3.0
-    assert stoich['O'] == 1.0
-    assert stoich['e'] == -1.0
-
-
-def test_read_janaf_stoich_from_janaf():
-    stoich = cat.read_janaf_stoich(janaf_file='H-064.txt')
-    assert len(stoich) == 2
-    assert stoich['H'] == 2.0
-    assert stoich['O'] == 1.0
-
-
-def test_read_janaf_stoich_from_formula():
-    stoich = cat.read_janaf_stoich(formula='H3O1+')
-    assert len(stoich) == 3
-    assert stoich['H'] == 3.0
-    assert stoich['O'] == 1.0
-    assert stoich['e'] == -1.0
-
-
-def test_setup_janaf_network_neutrals():
-    molecules = 'H2O CH4 CO CO2 H2 C2H2 C2H4 OH H He'.split()
-
-    species, elements, splines, stoich_vals = \
-        cat.setup_janaf_network(molecules)
-
-    expected_elements = ['He', 'C', 'H', 'O']
-    expected_stoich_vals = np.array([
-        [0, 2, 0, 1],
-        [1, 4, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 0, 2],
-        [0, 2, 0, 0],
-        [2, 2, 0, 0],
-        [2, 4, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0]
-    ])
-
-    np.testing.assert_equal(species, molecules)
-    np.testing.assert_equal(elements, ['C', 'H', 'He', 'O'])
-    np.testing.assert_equal(stoich_vals, expected_stoich_vals)
-
-
-def test_setup_janaf_network_ions():
-    molecules = 'H2O CH4 CO CO2 H2 C2H2 C2H4 OH H He e- H- H+ H2+ He+'.split()
-
-    species, elements, splines, stoich_vals = \
-        cat.setup_janaf_network(molecules)
+def test_network_init():
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = 'H2O CH4 CO CO2 H2 H C O'.split()
+    net = cat.Network(pressure, temperature, molecules)
 
     expected_stoich_vals = np.array([
-        [ 0,  2,  0,  1,  0],
-        [ 1,  4,  0,  0,  0],
-        [ 1,  0,  0,  1,  0],
-        [ 1,  0,  0,  2,  0],
-        [ 0,  2,  0,  0,  0],
-        [ 2,  2,  0,  0,  0],
-        [ 2,  4,  0,  0,  0],
-        [ 0,  1,  0,  1,  0],
-        [ 0,  1,  0,  0,  0],
-        [ 0,  0,  1,  0,  0],
-        [ 0,  0,  0,  0,  1],
-        [ 0,  1,  0,  0,  1],
-        [ 0,  1,  0,  0, -1],
-        [ 0,  2,  0,  0, -1],
-        [ 0,  0,  1,  0, -1]
+        [0, 2, 1],
+        [1, 4, 0],
+        [1, 0, 1],
+        [1, 0, 2],
+        [0, 2, 0],
+        [0, 1, 0],
+        [1, 0, 0],
+        [0, 0, 1]])
+    expected_element_rel_abundance = [2.88403150e-04, 1.0, 4.89778819e-04]
+    expected_provenance = np.array([
+        'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf',
     ])
+    expected_element_file = \
+        f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
 
-    np.testing.assert_equal(species, molecules)
-    np.testing.assert_equal(elements, ['C', 'H', 'He', 'O', 'e'])
-    np.testing.assert_equal(stoich_vals, expected_stoich_vals)
+    np.testing.assert_equal(net.pressure, pressure)
+    np.testing.assert_equal(net.temperature, temperature)
+    np.testing.assert_equal(net.input_species, molecules)
+    assert net.metallicity == 0.0
+    assert net.e_abundances == {}
+    assert net.e_scale == {}
+    assert net.e_ratio == {}
+    assert net.element_file == expected_element_file
+
+    np.testing.assert_equal(net.species, molecules)
+    np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.provenance, expected_provenance)
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
+    np.testing.assert_allclose(
+        net.element_rel_abundance, expected_element_rel_abundance,
+    )
 
 
-def test_setup_janaf_network_missing_species():
-    molecules = 'Ti Ti+ TiO TiO2 TiO+'.split()
-    species, elements, splines, stoich_vals = \
-        cat.setup_janaf_network(molecules)
+def test_network_mixed_sources():
+    # At least two things are being checked here:
+    # - COOH only exists in cea,
+    # - H2O2 is named HOOH in janaf,
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = ['H2O', 'H2O2', 'COOH', 'H']
+    sources = 'janaf', 'cea'
+    net = cat.Network(
+        pressure, temperature, molecules, sources=sources,
+    )
 
     expected_stoich_vals = np.array([
-        [ 0,  1,  0],
-        [ 0,  1, -1],
-        [ 1,  1,  0],
-        [ 2,  1,  0]
-    ])
+        [0, 2, 1],
+        [0, 2, 2],
+        [1, 1, 2],
+        [0, 1, 0]])
+    expected_provenance = np.array(['janaf', 'janaf', 'cea', 'janaf'])
+    expected_species = ['H2O', 'H2O2', 'COOH', 'H']
 
-    np.testing.assert_equal(species, ['Ti', 'Ti+', 'TiO', 'TiO2'])
-    np.testing.assert_equal(elements, ['O', 'Ti', 'e'])
-    np.testing.assert_equal(stoich_vals, expected_stoich_vals)
+    np.testing.assert_equal(net.pressure, pressure)
+    np.testing.assert_equal(net.temperature, temperature)
+    np.testing.assert_equal(net.input_species, molecules)
+    np.testing.assert_equal(net.species, expected_species)
+    np.testing.assert_equal(net.provenance, expected_provenance)
+    np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
+
+
+def test_network_missing_species(capfd):
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = ['H2O', 'H2O2', 'FeH', 'COOH', 'H']
+    net = cat.Network(pressure, temperature, molecules)
+
+    expected_stoich_vals = np.array([
+        [0, 2, 1],
+        [0, 2, 2],
+        [1, 1, 2],
+        [0, 1, 0]])
+    expected_provenance = np.array(['janaf', 'janaf', 'cea', 'janaf'])
+    expected_species = ['H2O', 'H2O2', 'COOH', 'H']
+
+    captured = capfd.readouterr()
+    assert 'input species were not found in any database' in captured.out
+    assert 'FeH' in captured.out
+
+    np.testing.assert_equal(net.pressure, pressure)
+    np.testing.assert_equal(net.temperature, temperature)
+    np.testing.assert_equal(net.input_species, molecules)
+    np.testing.assert_equal(net.species, expected_species)
+    np.testing.assert_equal(net.provenance, expected_provenance)
+    np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
+
+
+def test_network_cp_default_temp():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    cp = net.heat_capacity()
+
+    expected_cp = np.array([
+        5.26408044, 9.48143057, 4.11030773, 6.77638503, 7.34238673,
+        4.05594463, 3.72748083, 6.3275286 , 3.79892261, 2.49998117,
+        2.49998117, 2.50082308, 2.49998117, 2.51092596])
+
+    assert np.shape(cp) == (len(net_pressure), len(net_molecules))
+    np.testing.assert_allclose(cp[0], expected_cp)
+    np.testing.assert_equal(net.temperature, net_temperature)
+
+
+def test_network_cp_input_temp():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    temps = [100.0, 600.0, 1200.0]
+    cp = net.heat_capacity(temps)
+
+    expected_cp = np.array([
+        [4.00494915, 4.3688933 , 5.26408044],
+        [4.00001798, 6.28146429, 9.48143057],
+        [3.50040662, 3.6614513 , 4.11030773],
+        [3.51291495, 5.69140811, 6.77638503],
+        [4.00314507, 5.44749578, 7.34238673],
+        [3.50040662, 3.62140061, 4.05594463],
+        [3.38614788, 3.52722736, 3.72748083],
+        [3.50798378, 5.26865079, 6.3275286 ],
+        [3.92412613, 3.55128183, 3.79892261],
+        [2.49998117, 2.49998117, 2.49998117],
+        [2.49998117, 2.49998117, 2.49998117],
+        [2.55831326, 2.50154471, 2.50082308],
+        [2.49998117, 2.49998117, 2.49998117],
+        [2.85081563, 2.54063323, 2.51092596]]).T
+
+    assert np.shape(cp) == (len(temps), len(net_molecules))
+    np.testing.assert_allclose(cp, expected_cp)
+    # Network's temperature is not updated:
+    np.testing.assert_equal(net.temperature, net_temperature)
+
+
+def test_network_gibbs_default_temp():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    gibbs = net.gibbs_free_energy()
+
+    expected_gibbs = np.array([
+        -49.70275118, -33.59076581, -37.17544326, -68.58699428,
+        -31.08382889, -25.35365299, -17.97578591, -13.94856633,
+        -20.48067821,   6.44982554, -16.77498672,  51.21052551,
+         27.33544072,   3.95818325])
+
+    assert np.shape(gibbs) == (len(net_temperature), len(net_molecules))
+    np.testing.assert_allclose(gibbs[0], expected_gibbs)
+    np.testing.assert_equal(net.temperature, net_temperature)
+
+
+def test_network_vmr_e_source_asplund():
+    net = cat.Network(
+        net_pressure, net_temperature, net_molecules,
+        e_source='asplund_2021',
+    )
+    vmr = net.thermochemical_equilibrium()
+
+    assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
+    np.testing.assert_allclose(vmr, expected_vmr_1200K)
+    np.testing.assert_allclose(net.vmr, expected_vmr_1200K)
+
+    expected_e_abundance = np.array(
+        [2.88403150e-04, 1.0, 8.20351544e-02, 6.76082975e-05, 4.89778819e-04]
+    )
+    np.testing.assert_allclose(net.element_rel_abundance, expected_e_abundance)
+
+    assert np.all(vmr>=0)
+    elem_fractions = np.sum(net.vmr[0]*net.stoich_vals.T, axis=1)
+    elem_fractions /= elem_fractions[net.elements == 'H']
+    np.testing.assert_allclose(elem_fractions, net.element_rel_abundance)
+
+
+def test_network_vmr_cea_priority():
+    net = cat.Network(
+        net_pressure, net_temperature, net_molecules,
+        sources=['cea', 'janaf']
+    )
+    vmr = net.thermochemical_equilibrium()
+
+    assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
+    np.testing.assert_allclose(net.vmr, expected_vmr_1200K_cea)
+
+    expected_e_abundance = np.array(
+        [2.88403150e-04, 1.0, 8.20351544e-02, 6.76082975e-05, 4.89778819e-04]
+    )
+    np.testing.assert_allclose(net.element_rel_abundance, expected_e_abundance)
+
+    assert np.all(vmr>=0)
+    elem_fractions = np.sum(net.vmr[0]*net.stoich_vals.T, axis=1)
+    elem_fractions /= elem_fractions[net.elements == 'H']
+    np.testing.assert_allclose(elem_fractions, net.element_rel_abundance)
+
+
+def test_network_vmr_update_temp():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    vmr = net.thermochemical_equilibrium()
+
+    assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
+    np.testing.assert_allclose(vmr, expected_vmr_1200K)
+
+    thot = np.tile(2900.0, nlayers)
+    vmr = net.thermochemical_equilibrium(temperature=thot)
+    assert np.shape(vmr) == (len(net_temperature), len(net_molecules))
+    np.testing.assert_allclose(vmr, expected_vmr_2900K)
+    np.testing.assert_equal(net.temperature, thot)
+
+
+
+def test_network_vmr_update_metallicity():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    vmr = net.thermochemical_equilibrium(metallicity=0.0)
+    np.testing.assert_allclose(vmr, expected_vmr_1200K)
+
+    vmr = net.thermochemical_equilibrium(metallicity=1.0)
+    expected_e_abundance = np.array(
+        [2.88403150e-03, 1.0, 8.20351544e-02, 6.76082975e-04, 4.89778819e-03]
+    )
+    np.testing.assert_allclose(vmr, expected_vmr_10x_solar)
+    np.testing.assert_equal(net.metallicity, 1.0)
+    np.testing.assert_allclose(net.element_rel_abundance, expected_e_abundance)
+
+    vmr = net.thermochemical_equilibrium()
+    np.testing.assert_allclose(vmr, expected_vmr_10x_solar)
+
+
+def test_network_vmr_update_e_abundances():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    e_abundances = {'C': 8.0}
+    vmr = net.thermochemical_equilibrium(e_abundances=e_abundances)
+
+    np.testing.assert_allclose(vmr, expected_vmr_e_abund)
+    expected_e_abundance = np.array(
+        [1.0e-04, 1.0, 8.20351544e-02, 6.76082975e-05, 4.89778819e-04]
+    )
+    np.testing.assert_allclose(net.element_rel_abundance, expected_e_abundance)
+
+
+def test_network_vmr_update_e_scale():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    e_scale = {'C': 1.0}
+    vmr = net.thermochemical_equilibrium(e_scale=e_scale)
+
+    np.testing.assert_allclose(vmr, expected_vmr_e_scale)
+    expected_e_abundance = np.array(
+        [2.88403150e-03, 1.0, 8.20351544e-02, 6.76082975e-05, 4.89778819e-04]
+    )
+    np.testing.assert_allclose(net.element_rel_abundance, expected_e_abundance)
+
+
+def test_network_vmr_update_e_ratio():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    e_ratio = {'C_O': 0.8}
+    vmr = net.thermochemical_equilibrium(e_ratio=e_ratio)
+
+    np.testing.assert_allclose(vmr, expected_vmr_e_ratio)
+    expected_e_abundance = np.array(
+        [3.91823055e-04, 1.0, 8.20351544e-02, 6.76082975e-05, 4.89778819e-04]
+    )
+    np.testing.assert_allclose(net.element_rel_abundance, expected_e_abundance)
+    C_to_O = (
+        net.element_rel_abundance[net.elements=='C']
+        / net.element_rel_abundance[net.elements=='O'])
+    np.testing.assert_allclose(C_to_O, 0.8)
+
+
+def test_network_vmr_update_metal_e_ratio():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    metallicity = 1.0
+    e_ratio = {'C_O': 1.1}
+    vmr = net.thermochemical_equilibrium(
+        metallicity=metallicity,
+        e_ratio=e_ratio,
+    )
+
+    np.testing.assert_allclose(vmr, expected_vmr_metal_e_ratio)
+    expected_e_abundance = np.array(
+        [5.38756701e-03, 1.0, 8.20351544e-02, 6.76082975e-04, 4.89778819e-03]
+    )
+    np.testing.assert_allclose(
+        net.element_rel_abundance, expected_e_abundance)
+    C_to_O = (
+        net.element_rel_abundance[net.elements=='C']
+        / net.element_rel_abundance[net.elements=='O'])
+    np.testing.assert_allclose(C_to_O, 1.1)
+
+
+def test_network_vmr_update_temp_error():
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    match = (
+        'Temperature profile does not match size of '
+        'pressure profile [(]11 layers[)]')
+    bad_temp = np.tile(1200.0, nlayers-1)
+    with pytest.raises(ValueError, match=match):
+        net.thermochemical_equilibrium(bad_temp)
+
+
+def test_network_vmr_write_file(tmpdir):
+    atm_file = "network_atm_file.dat"
+    atm = f'{tmpdir}/{atm_file}'
+
+    net = cat.Network(net_pressure, net_temperature, net_molecules)
+    vmr = net.thermochemical_equilibrium(savefile=atm)
+    assert atm_file in os.listdir(str(tmpdir))
+
+
 
