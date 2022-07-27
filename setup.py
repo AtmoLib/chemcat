@@ -41,7 +41,7 @@ extensions = [
 
 package_data = {
     'chemcat': [
-        'data/janaf_conversion.txt',
+        'data/*',
         'data/janaf/*',
     ]
 }
