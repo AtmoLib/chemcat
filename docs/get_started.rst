@@ -27,10 +27,10 @@ atmospheric composition.
 System Requirements
 -------------------
 
-``chemcat`` is compatible with Python3.6+ and has been `tested
+``chemcat`` is compatible with **Python3.6+** and has been `tested
 <https://github.com/AtmoLib/chemcat/actions/workflows/python-package.yml?query=branch%3Amain>`_
-to work in both Linux and OS X, with the following software (which are
-installed automatically upon installation):
+to work in both Linux and OS X.  On installation (see below), the code
+will automatically install the following required Python software:
 
 * numpy (version 1.19.1+)
 * scipy (version 1.5.2+)

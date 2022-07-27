@@ -1,11 +1,14 @@
-.. _tutorial:
-
 Chemistry Tutorial
 ==================
 
 This tutorial shows how to compute chemistry with ``chemcat`` under
 different assumptions for temperature, metallicity, and custom elemental
 abundances.
+You can also find this tutorial as a `Python scrip here
+<https://github.com/AtmoLib/chemcat/blob/main/docs/chemistry_tutorial.ipynb>`_
+or a `jupyter notebook here
+<https://github.com/AtmoLib/chemcat/blob/main/docs/chemistry_tutorial.py>`_
+
 
 Let’s start off importing the necessary modules and create an utility
 function to plot the results:
@@ -35,23 +38,20 @@ a simple CHNO compostion (taking values from Asplund et al. 2021):
     
     net = cat.Network(pressure, temperature, molecules)
 
-To evaluate thermochemical equilibrium, run this method:
-
 .. code:: ipython3
 
-    # Compute abundances in thermochemical equilibrium:
+    # To compute thermochemical equilibrium abundances, run this method:
     vmr = net.thermochemical_equilibrium()
 
-and plot the results:
-
 .. code:: ipython3
 
+    # and plot the results:
     title = f'T = {temperature[0]} K'
-    ax = u.plot_vmr(pressure, vmr, species, title=title, fignum=10)
+    ax = u.plot_vmr(pressure, vmr, net.species, title=title, fignum=10)
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_7_0.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_5_0.png
 
 
 Evaluate at a different temperature
@@ -64,11 +64,12 @@ Evaluate at a different temperature
     vmr = net.thermochemical_equilibrium(temperature=temp_2800K)
     
     title = f'T = {temp_2800K[0]} K'
-    ax = u.plot_vmr(pressure, vmr, species, title=title, fignum=20)
+    vmr_range = (1e-25, 3)
+    ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=vmr_range, title=title, fignum=20)
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_9_0.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_7_0.png
 
 
 Object’s data
@@ -201,33 +202,25 @@ solar (in dex units)
     
     # And plot the results:
     title = 'Custom sub solar metallicity (0.1x solar)'
-    ax = u.plot_vmr(pressure, vmr_custom_sub_solar, species, title=title, fignum=30)
+    ax = u.plot_vmr(pressure, vmr_custom_sub_solar, net.species, title=title, fignum=30)
     
     title = 'Custom solar metallicity'
-    ax = u.plot_vmr(pressure, vmr_custom_solar, species, title=title, fignum=31)
+    ax = u.plot_vmr(pressure, vmr_custom_solar, net.species, title=title, fignum=31)
     
     title = 'Custom super solar metallicity (50x solar)'
-    ax = u.plot_vmr(pressure, vmr_custom_super_solar, species, title=title, fignum=32)
+    ax = u.plot_vmr(pressure, vmr_custom_super_solar, net.species, title=title, fignum=32)
 
 
 
-
-.. parsed-literal::
-
-    <AxesSubplot:title={'center':'Custom super solar metallicity (50x solar)'}, xlabel='Volume mixing ratio', ylabel='Pressure (bar)'>
+.. image:: chemistry_tutorial_files/chemistry_tutorial_11_0.png
 
 
 
-
-.. image:: chemistry_tutorial_files/chemistry_tutorial_13_1.png
-
-
-
-.. image:: chemistry_tutorial_files/chemistry_tutorial_13_2.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_11_1.png
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_13_3.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_11_2.png
 
 
 Note that once you modify a physical property, it stays modified until
@@ -297,18 +290,18 @@ a dictionary: (values in dex units, relative to H=12.0):
     
     # And plot the results:
     title = 'Custom carbon abundance'
-    ax = u.plot_vmr(pressure, vmr_custom_abundance1, species, title=title, fignum=33)
+    ax = u.plot_vmr(pressure, vmr_custom_abundance1, net.species, title=title, fignum=33)
     
     title = 'Custom many-elements abundance (C/O>1.0)'
-    ax = u.plot_vmr(pressure, vmr_custom_abundance2, species, title=title, fignum=34)
+    ax = u.plot_vmr(pressure, vmr_custom_abundance2, net.species, title=title, fignum=34)
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_17_0.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_15_0.png
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_17_1.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_15_1.png
 
 
 Elemental abundances relative to solar
@@ -334,11 +327,11 @@ dictionary (values in dex units, relative to solar):
     
     # And plot the results:
     title = 'Custom carbon abundance (scaled 10x solar), all other 1x solar'
-    ax = u.plot_vmr(pressure, vmr_custom_scale_carbon, species, title=title, fignum=35)
+    ax = u.plot_vmr(pressure, vmr_custom_scale_carbon, net.species, title=title, fignum=35)
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_19_0.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_17_0.png
 
 
 Custom elemental ratios
@@ -367,11 +360,11 @@ scaled relative to the second element’s abundance.
     
     # And plot the results:
     title = 'Custom C/O abundance ratio (C/O = 1.5)'
-    ax = u.plot_vmr(pressure, vmr_custom_ratio, species, title=title, fignum=36)
+    ax = u.plot_vmr(pressure, vmr_custom_ratio, net.species, title=title, fignum=36)
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_21_0.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_19_0.png
 
 
 And you can combine all these properties at once:
@@ -409,23 +402,23 @@ And you can combine all these properties at once:
     vmr_range = (1e-20, 1)
     title = 'Custom planet 1'
     ax = u.plot_vmr(
-        pressure, vmr_custom1, species,
+        pressure, vmr_custom1, net.species,
         title=title, fignum=37, vmr_range=vmr_range,
     )
     
     title = 'Custom planet 2'
     ax = u.plot_vmr(
-        pressure, vmr_custom2, species,
+        pressure, vmr_custom2, net.species,
         title=title, fignum=38, vmr_range=vmr_range,
     )
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_23_0.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_21_0.png
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_23_1.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_21_1.png
 
 
 Charge conservation
@@ -462,5 +455,6 @@ Charge conservation
 
 
 
-.. image:: chemistry_tutorial_files/chemistry_tutorial_25_0.png
+.. image:: chemistry_tutorial_files/chemistry_tutorial_23_0.png
+
 
