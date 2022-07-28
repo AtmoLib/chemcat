@@ -1,3 +1,5 @@
+.. _tutorial:
+
 Chemistry Tutorial
 ==================
 
@@ -5,15 +7,15 @@ This tutorial shows how to compute chemistry with ``chemcat`` under
 different assumptions for temperature, metallicity, and custom elemental
 abundances.
 You can also find this tutorial as a `Python scrip here
-<https://github.com/AtmoLib/chemcat/blob/main/docs/chemistry_tutorial.ipynb>`_
-or a `jupyter notebook here
 <https://github.com/AtmoLib/chemcat/blob/main/docs/chemistry_tutorial.py>`_
+or a `jupyter notebook here
+<https://github.com/AtmoLib/chemcat/blob/main/docs/chemistry_tutorial.ipynb>`_.
 
 
 Let’s start off importing the necessary modules and create an utility
 function to plot the results:
 
-.. code:: ipython3
+.. code:: python3
 
     import chemcat as cat
     import chemcat.utils as u
@@ -29,8 +31,9 @@ pressure-temperature profile and a list of species.
 This creates a chemical network assuming solar elemental composition and
 a simple CHNO compostion (taking values from Asplund et al. 2021):
 
-.. code:: ipython3
+.. code-block:: python3
 
+    # Setup:
     nlayers = 81
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
@@ -38,7 +41,7 @@ a simple CHNO compostion (taking values from Asplund et al. 2021):
     
     net = cat.Network(pressure, temperature, molecules)
 
-.. code:: ipython3
+.. code-block:: python
 
     # To compute thermochemical equilibrium abundances, run this method:
     vmr = net.thermochemical_equilibrium()
