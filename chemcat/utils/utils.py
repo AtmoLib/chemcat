@@ -134,7 +134,7 @@ COLOR_DICT = {
 
 def thermochemical_equilibrium(
         pressure, temperature, element_rel_abundance, stoich_vals,
-        gibbs_funcs,
+        gibbs_funcs, tolx=2.22e-16, tolf=2.22e-16,
     ):
     """
     Low-level function to compute thermochemical equilibrium for the
@@ -154,6 +154,10 @@ def thermochemical_equilibrium(
     gibbs_funcs: 1D iterable of callable functions
         Functions that return the Gibbs free energy (divided by RT)
         for each species in the network.
+    tolx: float
+        Relative error desired for convergence in the sum of squares.
+    tolf: float
+        Relative error desired for convergence in the approximate solution.
 
     Returns
     -------
@@ -196,7 +200,6 @@ def thermochemical_equilibrium(
     mu = np.zeros(nspecies)  # chemical potential/RT
     h_ts = thermo_eval(temperature, gibbs_funcs).T + np.log(pressure)
     delta_ln_vmr = np.zeros(nspecies)
-    tolx = tolf = 2.22e-16
 
     # Compute thermochemical equilibrium abundances at each layer:
     # (Go down the layers and then sweep back up in case the first run
