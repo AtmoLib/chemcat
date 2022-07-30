@@ -4,22 +4,13 @@
 __all__ = [
     'Thermo_Prop',
     'Network',
-    'thermo_eval',
-    'thermochemical_equilibrium',
 ]
-
-import itertools
-import sys
-import warnings
 
 import numpy as np
 
 from . import janaf
 from . import cea
 from . import utils as u
-
-sys.path.append(f'{u.ROOT}chemcat/lib')
-import _thermo as nr
 
 
 class Thermo_Prop():
@@ -212,7 +203,7 @@ class Network(object):
         """
         if temperature is None:
             temperature = self.temperature
-        return thermo_eval(temperature, self._heat_capacity)
+        return u.thermo_eval(temperature, self._heat_capacity)
 
 
     def gibbs_free_energy(self, temperature=None):
@@ -222,7 +213,7 @@ class Network(object):
         """
         if temperature is None:
             temperature = self.temperature
-        return thermo_eval(temperature, self._gibbs_free_energy)
+        return u.thermo_eval(temperature, self._gibbs_free_energy)
 
 
     def thermochemical_equilibrium(
@@ -290,7 +281,7 @@ class Network(object):
         if e_ratio is not None:
             self.e_ratio = e_ratio
 
-        self.vmr = thermochemical_equilibrium(
+        self.vmr = u.thermochemical_equilibrium(
             self.pressure,
             self.temperature,
             self.element_rel_abundance,
@@ -306,168 +297,4 @@ class Network(object):
             )
 
         return self.vmr
-
-
-def thermo_eval(temperature, thermo_funcs):
-    r"""
-    Compute the thermochemical property specified by thermo_func at
-    at the requested temperature(s).  These can be, e.g., the
-    heat_capacity or gibbs_free_energy functions returned by
-    setup_network().
-
-    Parameters
-    ----------
-    temperature: float or 1D float iterable
-        Temperature (Kelvin).
-    thermo_funcs: 1D iterable of callable functions
-        Functions that return the thermochemical property.
-
-    Returns
-    -------
-    thermo_prop: 1D or 2D float array
-        The provided thermochemical property evaluated at the requested
-        temperature(s).
-        The shape of the output depends on the shape of the
-        temperature input.
-
-    Examples
-    --------
-    >>> import chemcat as cat
-    >>> import chemcat.janaf as janaf
-    >>> import chemcat.utils as u
-    >>> import matplotlib.pyplot as plt
-    >>> import numpy as np
-
-    >>> molecules = (
-    >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O'.split()
-    >>> janaf_data = janaf.setup_network(molecules)
-    >>> species = janaf_data[0]
-    >>> heat_funcs = janaf_data[1]
-    >>> gibbs_funcs = janaf_data[2]
-
-    >>> temperature = 1500.0
-    >>> temperatures = np.arange(100.0, 4501.0, 10)
-    >>> cp1 = cat.thermo_eval(temperature, heat_funcs)
-    >>> cp2 = cat.thermo_eval(temperatures, heat_funcs)
-    >>> gibbs = cat.thermo_eval(temperatures, gibbs_funcs)
-
-    >>> nspecies = len(species)
-    >>> plt.figure('Heat capacity, Gibbs free energy', (8.5, 4.5))
-    >>> plt.clf()
-    >>> plt.subplot(121)
-    >>> for j in range(nspecies):
-    >>>     label = species[j]
-    >>>     plt.plot(
-    >>>         temperatures, cp2[:,j], label=label, c=u.COLOR_DICT[label],
-    >>>     )
-    >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
-    >>> plt.plot(np.tile(temperature,nspecies), cp1, 'ob', ms=4, zorder=-1)
-    >>> plt.xlabel('Temperature (K)')
-    >>> plt.ylabel('Heat capacity / R')
-
-    >>> plt.subplot(122)
-    >>> for j in range(nspecies):
-    >>>     label = species[j]
-    >>>     plt.plot(
-    >>>         temperatures, gibbs[:,j], label=label, c=u.COLOR_DICT[label],
-    >>>     )
-    >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
-    >>> plt.legend(loc='upper right', fontsize=8)
-    >>> plt.xlabel('Temperature (K)')
-    >>> plt.ylabel('Gibbs free energy / RT')
-    >>> plt.tight_layout()
-    """
-    temp = np.atleast_1d(temperature)
-    ntemp = np.shape(temp)[0]
-    nspecies = len(thermo_funcs)
-    thermo_prop = np.zeros((ntemp, nspecies))
-    for j in range(nspecies):
-        thermo_prop[:,j] = thermo_funcs[j](temp)
-    if np.shape(temperature) == ():
-        return np.squeeze(thermo_prop)
-    return thermo_prop
-
-
-def thermochemical_equilibrium(
-        pressure, temperature, element_rel_abundance, stoich_vals,
-        gibbs_funcs,
-    ):
-    """
-    Compute thermochemical equilibrium for the given chemical network
-    at the specified temperature--pressure profile.
-
-    Parameters
-    ----------
-    pressure: 1D float array
-        Pressure profile (bar).
-    temperature: 1D float array
-        Temperature profile (Kelvin).
-    element_rel_abundance: 1D float array
-        Elemental abundances (relative to H=1.0).
-    stoich_vals: 2D float array
-        Species stoichiometric values for CHON.
-    gibbs_funcs: 1D iterable of callable functions
-        Functions that return the Gibbs free energy (divided by RT)
-        for each species in the network.
-
-    Returns
-    -------
-    vmr: 2D float array
-        Species volume mixing ratios in thermochemical equilibrium
-        of shape [nlayers, nspecies].
-    """
-    nlayers = len(pressure)
-    nspecies, nelements = np.shape(stoich_vals)
-
-    # Target elemental fractions (and charge) for conservation:
-    b0 = element_rel_abundance / np.sum(element_rel_abundance)
-    # Total elemental abundance as first guess for total species abundance:
-    total_abundance = np.sum(b0)
-
-    is_atom = element_rel_abundance > 0.0
-    # Maximum abundance reachable by each species
-    # (i.e., species takes all available atoms)
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        max_abundances = np.array([
-            np.nanmin((b0/is_atom)[stoich>0] / stoich[stoich>0])
-            for stoich in stoich_vals
-        ])
-
-    total_natoms = np.sum(stoich_vals*is_atom, axis=1)
-    electron_index = total_natoms == 0
-    max_abundances[electron_index] = total_abundance
-
-    # Initial guess for abundances of species, gets modified in-place
-    # with best-fit values by nr.gibbs_energy_minimizer()
-    abundances = np.copy(max_abundances)
-
-    # Number of conservation equations to solve with Newton-Raphson
-    nequations = nelements + 1
-    pilag = np.zeros(nelements)  # pi lagrange multiplier
-    x = np.zeros(nequations)
-
-    vmr = np.zeros((nlayers, nspecies))
-    mu = np.zeros(nspecies)  # chemical potential/RT
-    h_ts = thermo_eval(temperature, gibbs_funcs).T + np.log(pressure)
-    delta_ln_vmr = np.zeros(nspecies)
-    tolx = tolf = 2.22e-16
-
-    # Compute thermochemical equilibrium abundances at each layer:
-    # (Go down the layers and then sweep back up in case the first run
-    # didn't get the global minimum)
-    for i in itertools.chain(range(nlayers), reversed(range(nlayers))):
-        abundances[abundances <= 0] = 1e-300
-        exit_status = nr.gibbs_energy_minimizer(
-            nspecies, nequations, stoich_vals, b0,
-            temperature[i], h_ts[:,i], pilag,
-            abundances, max_abundances, total_abundance,
-            mu, x, delta_ln_vmr, tolx, tolf,
-        )
-
-        if exit_status == 1:
-            print(f"Gibbs minimization failed at layer {i}")
-        vmr[i] = abundances / np.sum(abundances[~electron_index])
-
-    return vmr
 
