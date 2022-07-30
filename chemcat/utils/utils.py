@@ -728,6 +728,8 @@ def resolve_colors(species, color_dict=None, color_list=None):
 def plot_vmr(
         pressure, vmr, species,
         colors=None, vmr_range=None, fignum=320, title=None,
+        fontsize=14, linewidth=2.0, rect=None, axis=None,
+        savefig=None,
     ):
     """
     Plot VMRs vs pressure.
@@ -752,6 +754,17 @@ def plot_vmr(
         The identifier of the figure.
     title: Syting
         Title for the figure.
+    fontsize: Float
+        Font size for labels texts. Legend texts will be fontsize-5.
+    linewidth: Float
+        Width of VMR lines.
+    rect: 4-element float iterable
+        Axis position (left, bottom, right, top).
+        Note that legend will be placed to the right of this rect.
+    axis: AxesSubplot instance
+        Axis where to draw the VMRs. If not None, overrides fignum.
+    savefig: String
+        If not None, file name where to save the figure.
 
     Returns
     -------
@@ -780,8 +793,15 @@ def plot_vmr(
     >>> ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=(1e-20,3))
     """
     species = list(species)
+
+    if rect is not None:
+        position = rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]
+    else:
+        position = 0.09, 0.11, 0.79, 0.83
+
     if fignum == 316:
         fignum = 'Plotty McPltFace'
+
     # neutralized names:
     neutral_species = []
     for spec in species:
@@ -797,8 +817,6 @@ def plot_vmr(
             for spec,color in zip(neutral_species, colors)
         }
 
-    fs = 14
-    lw = 2.0
     dashes = {
         'neutral': (),
         'cation': (5.0, 1.5),
@@ -811,14 +829,20 @@ def plot_vmr(
     ]
     has_ions = np.any(['+' in spec or '-' in spec for spec in species])
 
-    fig = plt.figure(fignum, (8.5,5.0))
-    plt.clf()
-    plt.subplots_adjust(0.09, 0.11, 0.88, 0.94)
-    ax = plt.subplot(111)
+    # Get on with the plot:
+    if axis is None:
+        fig = plt.figure(fignum, (8.5,5.0))
+        plt.clf()
+        ax = plt.subplot(111)
+    else:
+        ax = axis
+    ax.set_position(position)
     ion_legend = ax.legend(
         handles=ion_handles,
+        fontsize=np.clip(fontsize-3, 5, np.inf),
         loc='lower left', labelspacing=0.1, framealpha=0.6,
     )
+
     for name in species:
         charge = int('+' in name) - int('-' in name)
         charge_label = labels[charge]
@@ -829,25 +853,27 @@ def plot_vmr(
             label = None
         ax.loglog(
             vmr[:,species.index(name)], pressure,
-            label=label, lw=lw, color=colors[spec],
+            label=label, lw=linewidth, color=colors[spec],
             dashes=dashes[charge_label],
         )
+
     ax.tick_params(
-        which='both', right=True, top=True, direction='in', labelsize=fs-2,
+        which='both', right=True, top=True, direction='in',
+        labelsize=fontsize-2,
     )
     ax.set_ylim(np.amax(pressure), np.amin(pressure))
     if vmr_range is not None:
         ax.set_xlim(vmr_range)
-    ax.set_ylabel('Pressure (bar)', fontsize=fs)
-    ax.set_xlabel('Volume mixing ratio', fontsize=fs)
+    ax.set_ylabel('Pressure (bar)', fontsize=fontsize)
+    ax.set_xlabel('Volume mixing ratio', fontsize=fontsize)
     if has_ions:
         ax.add_artist(ion_legend)
     if title is not  None:
-        ax.set_title(title, fontsize=fs)
+        ax.set_title(title, fontsize=fontsize)
 
     leg_args = {
         'loc': (1.01, 0.0),
-        'fontsize': fs-5,
+        'fontsize': np.clip(fontsize-5, 5, np.inf),
         'ncol': 1,
         'columnspacing': 1.0,
         'labelspacing': 0.0,
@@ -857,20 +883,26 @@ def plot_vmr(
     # Matplotlib black magic:
     def on_draw(event):
         """This will be called once the figure is drawn"""
-        ax = event.canvas.figure.axes[0]
+        ax = event.canvas.figure.vmr_axis
         legend = ax.get_legend()
         height_ratio = (
             legend.get_window_extent().height / ax.get_window_extent().height
         )
         ncols = int(height_ratio) + 1
         if ncols > 1:
-            plt.subplots_adjust(0.09, 0.11, 0.79, 0.94)
+            if fig.update_position:
+                ax.set_position([0.09, 0.11, 0.7, 0.83])
             leg_args['ncol'] = ncols
             ax.legend(**leg_args)
             fig.canvas.draw()
-    fig.canvas.mpl_connect('draw_event', on_draw)
-    ax.colors = colors
 
+    fig.vmr_axis = ax
+    fig.update_position = axis is None and rect is None
+    fig.canvas.mpl_connect('draw_event', on_draw)
+
+    if savefig is not None:
+        plt.savefig(savefig)
+    ax.colors = colors
     return ax
 
 
