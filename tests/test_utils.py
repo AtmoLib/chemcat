@@ -295,7 +295,7 @@ def test_resolve_colors_defaults():
     colors = u.resolve_colors(species)
     assert colors['H'] == 'blue'
     assert colors['He'] == 'olive'
-    assert colors['C'] == 'salmon'
+    assert colors['C'] == 'coral'
     assert colors['H2'] == 'deepskyblue'
     assert colors['CH4'] == 'darkorange'
     assert colors['CO'] == 'limegreen'
@@ -314,7 +314,7 @@ def test_resolve_colors_ions():
 
     assert colors['H'] == 'blue'
     assert colors['He'] == 'olive'
-    assert colors['C'] == 'salmon'
+    assert colors['C'] == 'coral'
     assert colors['H2'] == 'deepskyblue'
     assert colors['CH4'] == 'darkorange'
     assert colors['CO'] == 'limegreen'

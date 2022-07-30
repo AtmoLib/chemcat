@@ -65,7 +65,7 @@ COLOR_DICT = {
     'H2': 'deepskyblue',
     'He': 'olive',
     # Carbons:
-    'C': 'salmon',
+    'C': 'coral',
     'CH4': 'darkorange',
     'CO': 'limegreen',
     'CO2': 'red',
@@ -81,7 +81,7 @@ COLOR_DICT = {
     'H2O': 'navy',
     'OH': 'darkkhaki',
     # Silicons:
-    'Si': 'coral',
+    'Si': 'lightslategray',
     'SiO': 'darkturquoise',
     'SiH4': 'mediumvioletred',
     # Alkali:
@@ -98,7 +98,8 @@ COLOR_DICT = {
     'S': 'cornflowerblue',
     'H2S': 'darkgoldenrod',
     'HS': 'yellowgreen',
-    'e': 'darkgreen',
+    'SO': 'mediumseagreen',
+    'SO2': 'skyblue',
     # Aluminum:
     'Al': 'khaki',
     'AlOH': 'steelblue',
@@ -106,12 +107,13 @@ COLOR_DICT = {
     'OAlOH': 'tomato',
     'Ca': 'orange',
     'Ca(OH)2': 'indigo',
+    'e': 'darkgreen',
     # Heavy metals:
     'Ti': 'crimson',
     'TiO': 'brown',
     'TiO2': 'indianred',
     'VO': 'aquamarine',
-    'VO2': 'skyblue',
+    'VO2': 'mediumaquamarine',
     'V': 'darkcyan',
     'Mg': 'sandybrown',
     'MgH': 'lawngreen',
@@ -122,7 +124,7 @@ COLOR_DICT = {
     'F': 'yellow',
     'OAlF2': 'sienna',
     'TiF3': 'saddlebrown',
-    'AlF': 'mediumseagreen',
+    'AlF': 'orange',
     'HF': 'lightblue',
     'MnH': 'lime',
     'Mn': 'rebeccapurple',
@@ -724,14 +726,37 @@ def resolve_colors(species, color_dict=None, color_list=None):
 
 
 def plot_vmr(
-    pressure, vmr, species, colors=None, vmr_range=None, fignum=0, title=None,
-):
+        pressure, vmr, species,
+        colors=None, vmr_range=None, fignum=320, title=None,
+    ):
     """
     Plot VMRs vs pressure.
 
     Parameters
     ----------
-    TBD
+    pressure: 1D float iterable
+        pressure array in bars.
+    vmr: 2D float array
+        Volume mixing ratios of shape [nlayers, nspecies].
+    species: 1D string iterable
+        Names of the species in vmr.
+    colors: 1D iterable of strings
+        Color names to assign (sequentially) to the species.
+        If None, default to chemcat.utils.COLOR_DICT values.
+        Note that different ionic variations of a same species
+        (e.g., H, H+, H-) are assigned a same color, but differ
+        in line style.
+    vmr_range: 1D float iterable
+        The plotting boundaries along the vmr axis.
+    fignum: integer or string
+        The identifier of the figure.
+    title: Syting
+        Title for the figure.
+
+    Returns
+    -------
+    ax: AxesSubplot instance
+        The matplotlib Axes of the figure.
 
     Examples
     --------
@@ -741,23 +766,22 @@ def plot_vmr(
     >>> import matplotlib.pyplot as plt
 
     >>> nlayers = 81
-    >>> temperature = np.tile(1200.0, nlayers)
+    >>> temperature = np.tile(1500.0, nlayers)
     >>> pressure = np.logspace(-8, 3, nlayers)
-    >>> molecs = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O'.split()
-
     >>> molecs = (
     >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O '
     >>>     'e- H- H+ H2+ He+ '
-    >>>     'Na Na- Na+ K K- K+ Mg Mg+ Fe Fe+ '
-    >>>     'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+ '
-    >>>     'Si SiO SiO2 NaCl Cl KCl Al AlO AlO2').split()
+    >>>     'Na Na- Na+ K K- K+ '
+    >>>     'Si S SiO SiH4 H2S HS SO SO2 SiS'
+    >>> ).split()
 
     >>> net = cat.Network(pressure, temperature, molecs)
     >>> vmr = net.thermochemical_equilibrium()
-    >>> ax = u.plot_vmr(pressure, vmr, net.species)
+    >>> ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=(1e-20,3))
     """
     species = list(species)
-
+    if fignum == 316:
+        fignum = 'Plotty McPltFace'
     # neutralized names:
     neutral_species = []
     for spec in species:
@@ -845,6 +869,7 @@ def plot_vmr(
             ax.legend(**leg_args)
             fig.canvas.draw()
     fig.canvas.mpl_connect('draw_event', on_draw)
+    ax.colors = colors
 
     return ax
 
