@@ -138,8 +138,23 @@ class Network(object):
         self.input_species = input_species
 
         dealiased_species = u.de_aliasing(input_species, sources)
-        source_names = u.resolve_sources(dealiased_species, sources)
 
+        # Check and remove duplicates:
+        is_unique = np.zeros(len(dealiased_species), bool)
+        for i,spec in enumerate(dealiased_species):
+            if spec not in np.array(dealiased_species)[is_unique]:
+                is_unique[i] = True
+        if not np.all(is_unique):
+            duplicates = np.array(input_species)[~is_unique]
+            print(
+                'These species are duplicates of others in input (and will '
+                f'be removed):\n  {duplicates}'
+            )
+            input_species = np.array(input_species)[is_unique]
+            dealiased_species = np.array(dealiased_species)[is_unique]
+
+        # Check species exist in the database(s):
+        source_names = u.resolve_sources(dealiased_species, sources)
         idx_valid = source_names != None
         self.provenance = source_names[idx_valid]
         self.species = np.array(input_species)[idx_valid]
