@@ -5,7 +5,7 @@
 # Chemistry Tutorial
 # This tutorial shows how to compute chemistry with ``chemcat`` under different assumptions for temperature, metallicity, and custom elemental abundances.
 
-# Let's start off importing the necessary modules and create an utility function to plot the results:
+# Let's start off importing the necessary modules:
 
 import chemcat as cat
 import chemcat.utils as u
@@ -39,7 +39,12 @@ vmr = net.thermochemical_equilibrium(temperature=temp_2800K)
 
 title = f'T = {temp_2800K[0]} K'
 vmr_range = (1e-25, 3)
-ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=vmr_range, title=title, fignum=20)
+ax = u.plot_vmr(
+    pressure, vmr, net.species,
+    vmr_range=vmr_range,
+    title=title,
+    fignum=20,
+)
 
 
 ### Object's data
@@ -87,13 +92,25 @@ vmr_custom_super_solar = net.thermochemical_equilibrium(
 
 # And plot the results:
 title = 'Custom sub solar metallicity (0.1x solar)'
-ax = u.plot_vmr(pressure, vmr_custom_sub_solar, net.species, title=title, fignum=30)
+ax = u.plot_vmr(
+    pressure, vmr_custom_sub_solar, net.species,
+    title=title,
+    fignum=30,
+)
 
 title = 'Custom solar metallicity'
-ax = u.plot_vmr(pressure, vmr_custom_solar, net.species, title=title, fignum=31)
+ax = u.plot_vmr(
+    pressure, vmr_custom_solar, net.species,
+    title=title,
+    fignum=31,
+)
 
 title = 'Custom super solar metallicity (50x solar)'
-ax = u.plot_vmr(pressure, vmr_custom_super_solar, net.species, title=title, fignum=32)
+ax = u.plot_vmr(
+    pressure, vmr_custom_super_solar, net.species,
+    title=title,
+    fignum=32,
+)
 
 
 # Note that once you modify a physical property, it stays modified until you re-set it again:
@@ -139,10 +156,17 @@ vmr_custom_abundance2 = net.thermochemical_equilibrium(
 
 # And plot the results:
 title = 'Custom carbon abundance'
-ax = u.plot_vmr(pressure, vmr_custom_abundance1, net.species, title=title, fignum=33)
+ax = u.plot_vmr(
+    pressure, vmr_custom_abundance1, net.species,
+    title=title,
+    fignum=33,
+)
 
 title = 'Custom many-elements abundance (C/O>1.0)'
-ax = u.plot_vmr(pressure, vmr_custom_abundance2, net.species, title=title, fignum=34)
+ax = u.plot_vmr(pressure, vmr_custom_abundance2, net.species,
+    title=title,
+    fignum=34,
+)
 
 
 ### Elemental abundances relative to solar
@@ -163,7 +187,11 @@ vmr_custom_scale_carbon = net.thermochemical_equilibrium(
 
 # And plot the results:
 title = 'Custom carbon abundance (scaled 10x solar), all other 1x solar'
-ax = u.plot_vmr(pressure, vmr_custom_scale_carbon, net.species, title=title, fignum=35)
+ax = u.plot_vmr(
+    pressure, vmr_custom_scale_carbon, net.species,
+    title=title,
+    fignum=35,
+)
 
 
 ### Custom elemental ratios
@@ -238,18 +266,13 @@ temp = 2000.0
 temperature = np.tile(temp, nlayers)
 pressure = np.logspace(-10, 3, nlayers)
 
-HCNO_neutrals = 'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O'.split()
-ions = 'e- H- H+ H2+ He+'.split()
-alkali = 'Na Na- Na+ K K- K+'.split()
-metals = 'Mg Mg+ Fe Fe+'.split()
-metal_oxides = 'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+'.split()
 molecules = (
-    HCNO_neutrals
-    + ions
-    + alkali
-    + metals
-    + metal_oxides
-)
+    'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O '
+    'e- H- H+ H2+ He+ '
+    'Na Na- Na+ K K- K+ '
+    'Mg Mg+ Fe Fe+ '
+    'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+ '
+).split()
 
 net = cat.Network(pressure, temperature, molecules)
 vmr = net.thermochemical_equilibrium()

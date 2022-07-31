@@ -5,15 +5,14 @@ Chemistry Tutorial
 
 This tutorial shows how to compute chemistry with ``chemcat`` under
 different assumptions for temperature, metallicity, and custom elemental
-abundances.
+abundances.  |br|
 You can also find this tutorial as a `Python scrip here
 <https://github.com/AtmoLib/chemcat/blob/main/docs/chemistry_tutorial.py>`_
-or a `jupyter notebook here
+or as a `jupyter notebook here
 <https://github.com/AtmoLib/chemcat/blob/main/docs/chemistry_tutorial.ipynb>`_.
 
 
-Let’s start off importing the necessary modules and create an utility
-function to plot the results:
+Let’s start off importing the necessary modules:
 
 .. code:: python
 
@@ -457,7 +456,9 @@ Charge conservation
     ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=vmr_range, fignum=40)
 
 
-
 .. image:: chemistry_tutorial_files/chemistry_tutorial_23_0.png
 
+.. |br| raw:: html
+
+   <br/>
 

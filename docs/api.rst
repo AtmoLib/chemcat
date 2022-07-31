@@ -502,7 +502,7 @@ _____________
     300.00  4.041  -119.662
     400.00  4.121  -95.583
 
-    >>> temps, heat = janaf.read_file(janaf_file)
+    >>> temps, heat, gibbs = janaf.read_file(janaf_file)
     >>> for i in range(5):
     >>>     print(f'{temps[i]:6.2f}  {heat[i]:.3f}')
     298.15  2.500  -2.523
@@ -673,7 +673,7 @@ _____________
 .. py:data:: ROOT
 .. code-block:: pycon
 
-  '/Users/pato/Dropbox/IWF/projects/2022_chemcat/chemcat/'
+  '/Users/username/envs/proj/lib/python3.9/site-packages/chemcat/'
 
 .. py:data:: COLORS
 .. code-block:: pycon
@@ -751,7 +751,7 @@ _____________
     >>> import numpy as np
 
     >>> molecules = (
-    >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O'.split()
+    >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O').split()
     >>> janaf_data = janaf.setup_network(molecules)
     >>> species = janaf_data[0]
     >>> heat_funcs = janaf_data[1]
@@ -759,9 +759,9 @@ _____________
 
     >>> temperature = 1500.0
     >>> temperatures = np.arange(100.0, 4501.0, 10)
-    >>> cp1 = cat.thermo_eval(temperature, heat_funcs)
-    >>> cp2 = cat.thermo_eval(temperatures, heat_funcs)
-    >>> gibbs = cat.thermo_eval(temperatures, gibbs_funcs)
+    >>> cp1 = u.thermo_eval(temperature, heat_funcs)
+    >>> cp2 = u.thermo_eval(temperatures, heat_funcs)
+    >>> gibbs = u.thermo_eval(temperatures, gibbs_funcs)
 
     >>> nspecies = len(species)
     >>> plt.figure('Heat capacity, Gibbs free energy', (8.5, 4.5))
@@ -836,18 +836,21 @@ _____________
 
     Extract elemental abundances from a file (defaulted to a solar
     elemental abundance file from Asplund et al. 2021).
+
     Inputs
     ------
     element_file: String
         Path to a file containing a list of elements (second column)
         and their relative abundances in log10 scale relative to H=12.0
         (third column).
+
     Returns
     -------
     elements: 1D string array
         The list of elements.
     dex_abundances: 1D float array
         The elemental abundances in dex units relative to H=12.0.
+
     Examples
     --------
     >>> import chemcat.utils as u
@@ -911,7 +914,7 @@ _____________
     >>> import chemcat.utils as u
 
     >>> element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
-    >>> sun_elements, sun_dex = cat.read_elemental(element_file)
+    >>> sun_elements, sun_dex = u.read_elemental(element_file)
     >>> elements = 'H He C N O'.split()
 
     >>> solar = u.set_element_abundance(
@@ -922,29 +925,49 @@ _____________
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, metallicity=0.5,
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 9.1e-04', 'N: 2.1e-04', 'O: 1.5e-03']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   9.120e-04
+    N   2.138e-04
+    O   1.549e-03
 
     >>> # Custom carbon abundance by direct value (dex):
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_abundances={'C': 8.8},
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 6.3e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   6.310e-04
+    N   6.761e-05
+    O   4.898e-04
 
     >>> # Custom carbon abundance by scaling to 2x its solar value:
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_scale={'C': np.log10(2)},
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 5.8e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   5.768e-04
+    N   6.761e-05
+    O   4.898e-04
 
     >>> # Custom carbon abundance by scaling to C/O = 0.8:
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_ratio={'C_O': 0.8},
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 3.9e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   3.918e-04
+    N   6.761e-05
+    O   4.898e-04
 
 .. py:function:: de_aliasing(input_species, sources)
 .. code-block:: pycon
@@ -1044,7 +1067,7 @@ _____________
     >>> print(colors)
     {'H': 'blue',
      'He': 'olive',
-     'C': 'salmon',
+     'C': 'coral',
      'H2': 'deepskyblue',
      'CH4': 'darkorange',
      'CO': 'limegreen',
