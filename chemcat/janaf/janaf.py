@@ -132,7 +132,7 @@ def read_file(janaf_file):
     300.00  4.041  -119.662
     400.00  4.121  -95.583
 
-    >>> temps, heat = janaf.read_file(janaf_file)
+    >>> temps, heat, gibbs = janaf.read_file(janaf_file)
     >>> for i in range(5):
     >>>     print(f'{temps[i]:6.2f}  {heat[i]:.3f}')
     298.15  2.500  -2.523

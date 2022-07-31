@@ -20,40 +20,6 @@ net_pressure = np.logspace(-8, 3, nlayers)
 net_molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
 
 
-def test_thermo_eval_heat_capacity_single_temp():
-    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
-    janaf_data = janaf.setup_network(molecules)
-    heat_capacity = janaf_data[1]
-    temperature = 1500.0
-    cp = cat.thermo_eval(temperature, heat_capacity)
-
-    expected_cp = np.array([
-        5.6636252 , 10.41029396,  4.23563153,  7.02137982,  8.00580904,
-        4.19064967,  3.88455652,  6.65454913,  3.95900511,  2.49998117,
-        2.49998117,  2.5033488 ,  2.49998117,  2.50707724])
-    np.testing.assert_allclose(cp, expected_cp)
-
-
-def test_thermo_eval_heat_capacity_temp_array():
-    molecules = 'H2O CH4 CO C He'.split()
-    janaf_data = janaf.setup_network(molecules)
-    heat_capacity = janaf_data[1]
-    temperatures = np.arange(100.0, 4501.0, 200.0)
-    cp = cat.thermo_eval(temperatures, heat_capacity)
-
-    np.testing.assert_allclose(cp, expected_cp)
-
-
-def test_thermo_eval_gibbs_free_energy_temp_array():
-    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
-    janaf_data = janaf.setup_network(molecules)
-    gibbs_funcs = janaf_data[2]
-    temperatures = np.arange(100.0, 4101.0, 500.0)
-    gibbs = cat.thermo_eval(temperatures, gibbs_funcs)
-
-    np.testing.assert_allclose(gibbs, expected_gibbs)
-
-
 def test_network_init():
     nlayers = 81
     temperature = np.tile(1200.0, nlayers)
@@ -165,6 +131,82 @@ def test_network_cp_default_temp():
     assert np.shape(cp) == (len(net_pressure), len(net_molecules))
     np.testing.assert_allclose(cp[0], expected_cp)
     np.testing.assert_equal(net.temperature, net_temperature)
+
+
+def test_network_duplicated_species(capfd):
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = ['H', 'C', 'O', 'H2O', 'H2', 'CO', 'H2O', 'CO2']
+    net = cat.Network(pressure, temperature, molecules)
+    vmr = net.thermochemical_equilibrium()
+
+    good_molecules = ['H', 'C', 'O', 'H2O', 'H2', 'CO', 'CO2']
+    good_net = cat.Network(pressure, temperature, good_molecules)
+    expected_vmr = good_net.thermochemical_equilibrium()
+
+    expected_stoich_vals = np.array([
+        [0, 1, 0],
+        [1, 0, 0],
+        [0, 0, 1],
+        [0, 2, 1],
+        [0, 2, 0],
+        [1, 0, 1],
+        [1, 0, 2],
+    ])
+    expected_provenance = [
+        'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf', 'janaf',
+    ]
+    expected_species = ['H', 'C', 'O', 'H2O', 'H2', 'CO', 'CO2']
+
+    captured = capfd.readouterr()
+    assert 'These species are duplicates of others in input' in captured.out
+    assert 'H2O' in captured.out
+
+    np.testing.assert_equal(net.pressure, pressure)
+    np.testing.assert_equal(net.temperature, temperature)
+    np.testing.assert_equal(net.input_species, molecules)
+    np.testing.assert_equal(net.species, expected_species)
+    np.testing.assert_equal(net.provenance, expected_provenance)
+    np.testing.assert_equal(net.elements, ['C', 'H', 'O'])
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
+    np.testing.assert_equal(net.vmr, expected_vmr)
+
+
+def test_network_duplicated_aliased_species(capfd):
+    nlayers = 81
+    temperature = np.tile(1200.0, nlayers)
+    pressure = np.logspace(-8, 3, nlayers)
+    molecules = ['H', 'S',  'H2O', 'HS', 'H2S', 'SH']
+    net = cat.Network(pressure, temperature, molecules)
+    vmr = net.thermochemical_equilibrium()
+
+    good_molecules = ['H', 'S', 'H2O', 'HS', 'H2S']
+    good_net = cat.Network(pressure, temperature, good_molecules)
+    expected_vmr = good_net.thermochemical_equilibrium()
+
+    expected_stoich_vals = np.array([
+        [1, 0, 0],
+        [0, 0, 1],
+        [2, 1, 0],
+        [1, 0, 1],
+        [2, 0, 1],
+    ])
+    expected_provenance = ['janaf', 'janaf', 'janaf', 'janaf', 'janaf']
+    expected_species = ['H', 'S', 'H2O', 'HS', 'H2S']
+
+    captured = capfd.readouterr()
+    assert 'These species are duplicates of others in input' in captured.out
+    assert 'SH' in captured.out
+
+    np.testing.assert_equal(net.pressure, pressure)
+    np.testing.assert_equal(net.temperature, temperature)
+    np.testing.assert_equal(net.input_species, molecules)
+    np.testing.assert_equal(net.species, expected_species)
+    np.testing.assert_equal(net.provenance, expected_provenance)
+    np.testing.assert_equal(net.elements, ['H', 'O', 'S'])
+    np.testing.assert_equal(net.stoich_vals, expected_stoich_vals)
+    np.testing.assert_equal(net.vmr, expected_vmr)
 
 
 def test_network_cp_input_temp():

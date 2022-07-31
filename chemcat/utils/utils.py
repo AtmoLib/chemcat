@@ -5,6 +5,8 @@ __all__ = [
     'ROOT',
     'COLORS',
     'COLOR_DICT',
+    'thermochemical_equilibrium',
+    'thermo_eval',
     'stoich_matrix',
     'read_elemental',
     'set_element_abundance',
@@ -19,12 +21,17 @@ __all__ = [
 import itertools
 import os
 from pathlib import Path
+import sys
+import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 ROOT = str(Path(__file__).parents[2]) + os.path.sep
+
+sys.path.append(f'{ROOT}chemcat/lib')
+import _thermo as nr
 
 
 # A long list of colors:
@@ -58,7 +65,7 @@ COLOR_DICT = {
     'H2': 'deepskyblue',
     'He': 'olive',
     # Carbons:
-    'C': 'salmon',
+    'C': 'coral',
     'CH4': 'darkorange',
     'CO': 'limegreen',
     'CO2': 'red',
@@ -74,7 +81,7 @@ COLOR_DICT = {
     'H2O': 'navy',
     'OH': 'darkkhaki',
     # Silicons:
-    'Si': 'coral',
+    'Si': 'lightslategray',
     'SiO': 'darkturquoise',
     'SiH4': 'mediumvioletred',
     # Alkali:
@@ -91,7 +98,8 @@ COLOR_DICT = {
     'S': 'cornflowerblue',
     'H2S': 'darkgoldenrod',
     'HS': 'yellowgreen',
-    'e': 'darkgreen',
+    'SO': 'mediumseagreen',
+    'SO2': 'skyblue',
     # Aluminum:
     'Al': 'khaki',
     'AlOH': 'steelblue',
@@ -99,12 +107,13 @@ COLOR_DICT = {
     'OAlOH': 'tomato',
     'Ca': 'orange',
     'Ca(OH)2': 'indigo',
+    'e': 'darkgreen',
     # Heavy metals:
     'Ti': 'crimson',
     'TiO': 'brown',
     'TiO2': 'indianred',
     'VO': 'aquamarine',
-    'VO2': 'skyblue',
+    'VO2': 'mediumaquamarine',
     'V': 'darkcyan',
     'Mg': 'sandybrown',
     'MgH': 'lawngreen',
@@ -115,7 +124,7 @@ COLOR_DICT = {
     'F': 'yellow',
     'OAlF2': 'sienna',
     'TiF3': 'saddlebrown',
-    'AlF': 'mediumseagreen',
+    'AlF': 'orange',
     'HF': 'lightblue',
     'MnH': 'lime',
     'Mn': 'rebeccapurple',
@@ -123,6 +132,177 @@ COLOR_DICT = {
     'P': 'peachpuff',
     '(P2O3)2': 'cadetblue',
 }
+
+
+def thermochemical_equilibrium(
+        pressure, temperature, element_rel_abundance, stoich_vals,
+        gibbs_funcs, tolx=2.22e-16, tolf=2.22e-16,
+    ):
+    """
+    Low-level function to compute thermochemical equilibrium for the
+    given chemical network at the specified temperature--pressure
+    profile.
+
+    Parameters
+    ----------
+    pressure: 1D float array
+        Pressure profile (bar).
+    temperature: 1D float array
+        Temperature profile (Kelvin).
+    element_rel_abundance: 1D float array
+        Elemental abundances (relative to H=1.0).
+    stoich_vals: 2D float array
+        Species stoichiometric values for CHON.
+    gibbs_funcs: 1D iterable of callable functions
+        Functions that return the Gibbs free energy (divided by RT)
+        for each species in the network.
+    tolx: float
+        Relative error desired for convergence in the sum of squares.
+    tolf: float
+        Relative error desired for convergence in the approximate solution.
+
+    Returns
+    -------
+    vmr: 2D float array
+        Species volume mixing ratios in thermochemical equilibrium
+        of shape [nlayers, nspecies].
+    """
+    nlayers = len(pressure)
+    nspecies, nelements = np.shape(stoich_vals)
+
+    # Target elemental fractions (and charge) for conservation:
+    b0 = element_rel_abundance / np.sum(element_rel_abundance)
+    # Total elemental abundance as first guess for total species abundance:
+    total_abundance = np.sum(b0)
+
+    is_atom = element_rel_abundance > 0.0
+    # Maximum abundance reachable by each species
+    # (i.e., species takes all available atoms)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        max_abundances = np.array([
+            np.nanmin((b0/is_atom)[stoich>0] / stoich[stoich>0])
+            for stoich in stoich_vals
+        ])
+
+    total_natoms = np.sum(stoich_vals*is_atom, axis=1)
+    electron_index = total_natoms == 0
+    max_abundances[electron_index] = total_abundance
+
+    # Initial guess for abundances of species, gets modified in-place
+    # with best-fit values by nr.gibbs_energy_minimizer()
+    abundances = np.copy(max_abundances)
+
+    # Number of conservation equations to solve with Newton-Raphson
+    nequations = nelements + 1
+    pilag = np.zeros(nelements)  # pi lagrange multiplier
+    x = np.zeros(nequations)
+
+    vmr = np.zeros((nlayers, nspecies))
+    mu = np.zeros(nspecies)  # chemical potential/RT
+    h_ts = thermo_eval(temperature, gibbs_funcs).T + np.log(pressure)
+    delta_ln_vmr = np.zeros(nspecies)
+
+    # Compute thermochemical equilibrium abundances at each layer:
+    # (Go down the layers and then sweep back up in case the first run
+    # didn't get the global minimum)
+    for i in itertools.chain(range(nlayers), reversed(range(nlayers))):
+        abundances[abundances <= 0] = 1e-300
+        exit_status = nr.gibbs_energy_minimizer(
+            nspecies, nequations, stoich_vals, b0,
+            temperature[i], h_ts[:,i], pilag,
+            abundances, max_abundances, total_abundance,
+            mu, x, delta_ln_vmr, tolx, tolf,
+        )
+
+        if exit_status == 1:
+            print(f"Gibbs minimization failed at layer {i}")
+        vmr[i] = abundances / np.sum(abundances[~electron_index])
+
+    return vmr
+
+
+def thermo_eval(temperature, thermo_funcs):
+    r"""
+    Low-level function to compute the thermochemical property
+    specified by thermo_func at at the requested temperature(s).
+    These can be, e.g., the heat_capacity or gibbs_free_energy
+    functions returned by setup_network().
+
+    Normally you want to use this function via the heat_capacity()
+    and gibbs_free_energy() methods of the chemcat.Network() object.
+
+    Parameters
+    ----------
+    temperature: float or 1D float iterable
+        Temperature (Kelvin).
+    thermo_funcs: 1D iterable of callable functions
+        Functions that return the thermochemical property.
+
+    Returns
+    -------
+    thermo_prop: 1D or 2D float array
+        The provided thermochemical property evaluated at the requested
+        temperature(s).
+        The shape of the output depends on the shape of the
+        temperature input.
+
+    Examples
+    --------
+    >>> import chemcat as cat
+    >>> import chemcat.janaf as janaf
+    >>> import chemcat.utils as u
+    >>> import matplotlib.pyplot as plt
+    >>> import numpy as np
+
+    >>> molecules = (
+    >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O').split()
+    >>> janaf_data = janaf.setup_network(molecules)
+    >>> species = janaf_data[0]
+    >>> heat_funcs = janaf_data[1]
+    >>> gibbs_funcs = janaf_data[2]
+
+    >>> temperature = 1500.0
+    >>> temperatures = np.arange(100.0, 4501.0, 10)
+    >>> cp1 = u.thermo_eval(temperature, heat_funcs)
+    >>> cp2 = u.thermo_eval(temperatures, heat_funcs)
+    >>> gibbs = u.thermo_eval(temperatures, gibbs_funcs)
+
+    >>> nspecies = len(species)
+    >>> plt.figure('Heat capacity, Gibbs free energy', (8.5, 4.5))
+    >>> plt.clf()
+    >>> plt.subplot(121)
+    >>> for j in range(nspecies):
+    >>>     label = species[j]
+    >>>     plt.plot(
+    >>>         temperatures, cp2[:,j], label=label, c=u.COLOR_DICT[label],
+    >>>     )
+    >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
+    >>> plt.plot(np.tile(temperature,nspecies), cp1, 'ob', ms=4, zorder=-1)
+    >>> plt.xlabel('Temperature (K)')
+    >>> plt.ylabel('Heat capacity / R')
+
+    >>> plt.subplot(122)
+    >>> for j in range(nspecies):
+    >>>     label = species[j]
+    >>>     plt.plot(
+    >>>         temperatures, gibbs[:,j], label=label, c=u.COLOR_DICT[label],
+    >>>     )
+    >>> plt.xlim(np.amin(temperatures), np.amax(temperatures))
+    >>> plt.legend(loc='upper right', fontsize=8)
+    >>> plt.xlabel('Temperature (K)')
+    >>> plt.ylabel('Gibbs free energy / RT')
+    >>> plt.tight_layout()
+    """
+    temp = np.atleast_1d(temperature)
+    ntemp = np.shape(temp)[0]
+    nspecies = len(thermo_funcs)
+    thermo_prop = np.zeros((ntemp, nspecies))
+    for j in range(nspecies):
+        thermo_prop[:,j] = thermo_funcs[j](temp)
+    if np.shape(temperature) == ():
+        return np.squeeze(thermo_prop)
+    return thermo_prop
 
 
 def stoich_matrix(stoich_data):
@@ -186,18 +366,21 @@ def read_elemental(element_file):
     """
     Extract elemental abundances from a file (defaulted to a solar
     elemental abundance file from Asplund et al. 2021).
+
     Inputs
     ------
     element_file: String
         Path to a file containing a list of elements (second column)
         and their relative abundances in log10 scale relative to H=12.0
         (third column).
+
     Returns
     -------
     elements: 1D string array
         The list of elements.
     dex_abundances: 1D float array
         The elemental abundances in dex units relative to H=12.0.
+
     Examples
     --------
     >>> import chemcat.utils as u
@@ -269,7 +452,7 @@ def set_element_abundance(
     >>> import chemcat.utils as u
 
     >>> element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
-    >>> sun_elements, sun_dex = cat.read_elemental(element_file)
+    >>> sun_elements, sun_dex = u.read_elemental(element_file)
     >>> elements = 'H He C N O'.split()
 
     >>> solar = u.set_element_abundance(
@@ -280,29 +463,49 @@ def set_element_abundance(
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, metallicity=0.5,
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 9.1e-04', 'N: 2.1e-04', 'O: 1.5e-03']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   9.120e-04
+    N   2.138e-04
+    O   1.549e-03
 
     >>> # Custom carbon abundance by direct value (dex):
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_abundances={'C': 8.8},
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 6.3e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   6.310e-04
+    N   6.761e-05
+    O   4.898e-04
 
     >>> # Custom carbon abundance by scaling to 2x its solar value:
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_scale={'C': np.log10(2)},
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 5.8e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   5.768e-04
+    N   6.761e-05
+    O   4.898e-04
 
     >>> # Custom carbon abundance by scaling to C/O = 0.8:
     >>> abund = u.set_element_abundance(
     >>>     elements, sun_elements, sun_dex, e_ratio={'C_O': 0.8},
     >>> )
-    >>> print([f'{e}: {q:.1e}' for e,q in zip(elements, abund)])
-    ['H: 1.0e+00', 'He: 8.2e-02', 'C: 3.9e-04', 'N: 6.8e-05', 'O: 4.9e-04']
+    >>> for e,q in zip(elements, abund):
+    >>>     print(f'{e:3} {q:.3e}')
+    H   1.000e+00
+    He  8.204e-02
+    C   3.918e-04
+    N   6.761e-05
+    O   4.898e-04
     """
     nelements = len(elements)
     elemental_abundances = np.zeros(nelements)
@@ -493,7 +696,7 @@ def resolve_colors(species, color_dict=None, color_list=None):
     >>> print(colors)
     {'H': 'blue',
      'He': 'olive',
-     'C': 'salmon',
+     'C': 'coral',
      'H2': 'deepskyblue',
      'CH4': 'darkorange',
      'CO': 'limegreen',
@@ -546,14 +749,50 @@ def resolve_colors(species, color_dict=None, color_list=None):
 
 
 def plot_vmr(
-    pressure, vmr, species, colors=None, vmr_range=None, fignum=0, title=None,
-):
+        pressure, vmr, species,
+        colors=None, vmr_range=None, fignum=320, title=None,
+        fontsize=14, linewidth=2.0, rect=None, axis=None,
+        savefig=None,
+    ):
     """
     Plot VMRs vs pressure.
 
     Parameters
     ----------
-    TBD
+    pressure: 1D float iterable
+        pressure array in bars.
+    vmr: 2D float array
+        Volume mixing ratios of shape [nlayers, nspecies].
+    species: 1D string iterable
+        Names of the species in vmr.
+    colors: 1D iterable of strings
+        Color names to assign (sequentially) to the species.
+        If None, default to chemcat.utils.COLOR_DICT values.
+        Note that different ionic variations of a same species
+        (e.g., H, H+, H-) are assigned a same color, but differ
+        in line style.
+    vmr_range: 1D float iterable
+        The plotting boundaries along the vmr axis.
+    fignum: integer or string
+        The identifier of the figure.
+    title: Syting
+        Title for the figure.
+    fontsize: Float
+        Font size for labels texts. Legend texts will be fontsize-5.
+    linewidth: Float
+        Width of VMR lines.
+    rect: 4-element float iterable
+        Axis position (left, bottom, right, top).
+        Note that legend will be placed to the right of this rect.
+    axis: AxesSubplot instance
+        Axis where to draw the VMRs. If not None, overrides fignum.
+    savefig: String
+        If not None, file name where to save the figure.
+
+    Returns
+    -------
+    ax: AxesSubplot instance
+        The matplotlib Axes of the figure.
 
     Examples
     --------
@@ -563,22 +802,28 @@ def plot_vmr(
     >>> import matplotlib.pyplot as plt
 
     >>> nlayers = 81
-    >>> temperature = np.tile(1200.0, nlayers)
+    >>> temperature = np.tile(1500.0, nlayers)
     >>> pressure = np.logspace(-8, 3, nlayers)
-    >>> molecs = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH C2H2 C2H4 H He C N O'.split()
-
     >>> molecs = (
     >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O '
     >>>     'e- H- H+ H2+ He+ '
-    >>>     'Na Na- Na+ K K- K+ Mg Mg+ Fe Fe+ '
-    >>>     'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+ '
-    >>>     'Si SiO SiO2 NaCl Cl KCl Al AlO AlO2').split()
+    >>>     'Na Na- Na+ K K- K+ '
+    >>>     'Si S SiO SiH4 H2S HS SO SO2 SiS'
+    >>> ).split()
 
     >>> net = cat.Network(pressure, temperature, molecs)
     >>> vmr = net.thermochemical_equilibrium()
-    >>> ax = u.plot_vmr(pressure, vmr, net.species)
+    >>> ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=(1e-20,3))
     """
     species = list(species)
+
+    if rect is not None:
+        position = rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]
+    else:
+        position = 0.09, 0.11, 0.79, 0.83
+
+    if fignum == 316:
+        fignum = 'Plotty McPltFace'
 
     # neutralized names:
     neutral_species = []
@@ -595,8 +840,6 @@ def plot_vmr(
             for spec,color in zip(neutral_species, colors)
         }
 
-    fs = 14
-    lw = 2.0
     dashes = {
         'neutral': (),
         'cation': (5.0, 1.5),
@@ -609,14 +852,20 @@ def plot_vmr(
     ]
     has_ions = np.any(['+' in spec or '-' in spec for spec in species])
 
-    fig = plt.figure(fignum, (8.5,5.0))
-    plt.clf()
-    plt.subplots_adjust(0.09, 0.11, 0.88, 0.94)
-    ax = plt.subplot(111)
+    # Get on with the plot:
+    if axis is None:
+        fig = plt.figure(fignum, (8.5,5.0))
+        plt.clf()
+        ax = plt.subplot(111)
+    else:
+        ax = axis
+    ax.set_position(position)
     ion_legend = ax.legend(
         handles=ion_handles,
+        fontsize=np.clip(fontsize-3, 5, np.inf),
         loc='lower left', labelspacing=0.1, framealpha=0.6,
     )
+
     for name in species:
         charge = int('+' in name) - int('-' in name)
         charge_label = labels[charge]
@@ -627,25 +876,27 @@ def plot_vmr(
             label = None
         ax.loglog(
             vmr[:,species.index(name)], pressure,
-            label=label, lw=lw, color=colors[spec],
+            label=label, lw=linewidth, color=colors[spec],
             dashes=dashes[charge_label],
         )
+
     ax.tick_params(
-        which='both', right=True, top=True, direction='in', labelsize=fs-2,
+        which='both', right=True, top=True, direction='in',
+        labelsize=fontsize-2,
     )
     ax.set_ylim(np.amax(pressure), np.amin(pressure))
     if vmr_range is not None:
         ax.set_xlim(vmr_range)
-    ax.set_ylabel('Pressure (bar)', fontsize=fs)
-    ax.set_xlabel('Volume mixing ratio', fontsize=fs)
+    ax.set_ylabel('Pressure (bar)', fontsize=fontsize)
+    ax.set_xlabel('Volume mixing ratio', fontsize=fontsize)
     if has_ions:
         ax.add_artist(ion_legend)
     if title is not  None:
-        ax.set_title(title, fontsize=fs)
+        ax.set_title(title, fontsize=fontsize)
 
     leg_args = {
         'loc': (1.01, 0.0),
-        'fontsize': fs-5,
+        'fontsize': np.clip(fontsize-5, 5, np.inf),
         'ncol': 1,
         'columnspacing': 1.0,
         'labelspacing': 0.0,
@@ -655,19 +906,26 @@ def plot_vmr(
     # Matplotlib black magic:
     def on_draw(event):
         """This will be called once the figure is drawn"""
-        ax = event.canvas.figure.axes[0]
+        ax = event.canvas.figure.vmr_axis
         legend = ax.get_legend()
         height_ratio = (
             legend.get_window_extent().height / ax.get_window_extent().height
         )
         ncols = int(height_ratio) + 1
         if ncols > 1:
-            plt.subplots_adjust(0.09, 0.11, 0.79, 0.94)
+            if fig.update_position:
+                ax.set_position([0.09, 0.11, 0.7, 0.83])
             leg_args['ncol'] = ncols
             ax.legend(**leg_args)
             fig.canvas.draw()
+
+    fig.vmr_axis = ax
+    fig.update_position = axis is None and rect is None
     fig.canvas.mpl_connect('draw_event', on_draw)
 
+    if savefig is not None:
+        plt.savefig(savefig)
+    ax.colors = colors
     return ax
 
 

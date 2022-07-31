@@ -8,12 +8,47 @@ import pytest
 
 import chemcat as cat
 import chemcat.utils as u
+import chemcat.janaf as janaf
 
 from conftest import *
 
 
 # Ddefault values:
 element_file = f'{u.ROOT}chemcat/data/asplund_2021_solar_abundances.dat'
+
+
+def test_thermo_eval_heat_capacity_single_temp():
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    janaf_data = janaf.setup_network(molecules)
+    heat_capacity = janaf_data[1]
+    temperature = 1500.0
+    cp = u.thermo_eval(temperature, heat_capacity)
+
+    expected_cp = np.array([
+        5.6636252 , 10.41029396,  4.23563153,  7.02137982,  8.00580904,
+        4.19064967,  3.88455652,  6.65454913,  3.95900511,  2.49998117,
+        2.49998117,  2.5033488 ,  2.49998117,  2.50707724])
+    np.testing.assert_allclose(cp, expected_cp)
+
+
+def test_thermo_eval_heat_capacity_temp_array():
+    molecules = 'H2O CH4 CO C He'.split()
+    janaf_data = janaf.setup_network(molecules)
+    heat_capacity = janaf_data[1]
+    temperatures = np.arange(100.0, 4501.0, 200.0)
+    cp = u.thermo_eval(temperatures, heat_capacity)
+
+    np.testing.assert_allclose(cp, expected_cp)
+
+
+def test_thermo_eval_gibbs_free_energy_temp_array():
+    molecules = 'H2O CH4 CO CO2 NH3 N2 H2 HCN OH H He C N O'.split()
+    janaf_data = janaf.setup_network(molecules)
+    gibbs_funcs = janaf_data[2]
+    temperatures = np.arange(100.0, 4101.0, 500.0)
+    gibbs = u.thermo_eval(temperatures, gibbs_funcs)
+
+    np.testing.assert_allclose(gibbs, expected_gibbs)
 
 
 def test_stoich_matrix_neutrals():
@@ -260,7 +295,7 @@ def test_resolve_colors_defaults():
     colors = u.resolve_colors(species)
     assert colors['H'] == 'blue'
     assert colors['He'] == 'olive'
-    assert colors['C'] == 'salmon'
+    assert colors['C'] == 'coral'
     assert colors['H2'] == 'deepskyblue'
     assert colors['CH4'] == 'darkorange'
     assert colors['CO'] == 'limegreen'
@@ -279,7 +314,7 @@ def test_resolve_colors_ions():
 
     assert colors['H'] == 'blue'
     assert colors['He'] == 'olive'
-    assert colors['C'] == 'salmon'
+    assert colors['C'] == 'coral'
     assert colors['H2'] == 'deepskyblue'
     assert colors['CH4'] == 'darkorange'
     assert colors['CO'] == 'limegreen'
@@ -333,25 +368,22 @@ def test_resolve_colors_not_all_colors_in_dict():
     assert colors['CO2'] == 'magenta'
 
 
-@pytest.mark.skip(reason='TBI')
 def test_plot_vmr():
+    # Test that it doesn't break ... (most I can do)
     nlayers = 81
     temp = 1700.0
     temperature = np.tile(temp, nlayers)
     pressure = np.logspace(-10, 3, nlayers)
 
     species = (
-        'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O'.split()
-        + 'e- H- H+ H2+ He+'.split()
-        + 'Na Na- Na+ K K- K+'.split()
-        #+ 'Mg Mg+ Fe Fe+'.split()
-        #+ 'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+'.split()
-        + 'H3O+'.split()
-    )
+        'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O '
+        'e- H- H+ H2+ He+ '
+        'Na Na- Na+ K K- K+ '
+        'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+ '
+        'Si S SiO SiH4 H2S HS SO SO2 SiS'
+    ).split()
 
     net = cat.Network(pressure, temperature, species)
     vmr = net.thermochemical_equilibrium()
-    species = net.species
-    ax = u.plot_vmr(pressure, vmr, species, vmr_range=(1e-30, 3))
-
+    ax = u.plot_vmr(pressure, vmr, net.species)
 
