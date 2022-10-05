@@ -752,7 +752,7 @@ def plot_vmr(
         pressure, vmr, species,
         colors=None, vmr_range=None, fignum=320, title=None,
         fontsize=14, linewidth=2.0, rect=None, axis=None,
-        savefig=None,
+        savefig=None, show_legends=True,
     ):
     """
     Plot VMRs vs pressure.
@@ -788,6 +788,8 @@ def plot_vmr(
         Axis where to draw the VMRs. If not None, overrides fignum.
     savefig: String
         If not None, file name where to save the figure.
+    show_legends: Bool
+        Flag indicating whether legends should be plotted.
 
     Returns
     -------
@@ -860,11 +862,6 @@ def plot_vmr(
     else:
         ax = axis
     ax.set_position(position)
-    ion_legend = ax.legend(
-        handles=ion_handles,
-        fontsize=np.clip(fontsize-3, 5, np.inf),
-        loc='lower left', labelspacing=0.1, framealpha=0.6,
-    )
 
     for name in species:
         charge = int('+' in name) - int('-' in name)
@@ -889,19 +886,24 @@ def plot_vmr(
         ax.set_xlim(vmr_range)
     ax.set_ylabel('Pressure (bar)', fontsize=fontsize)
     ax.set_xlabel('Volume mixing ratio', fontsize=fontsize)
-    if has_ions:
-        ax.add_artist(ion_legend)
     if title is not  None:
         ax.set_title(title, fontsize=fontsize)
-
-    leg_args = {
-        'loc': (1.01, 0.0),
-        'fontsize': np.clip(fontsize-5, 5, np.inf),
-        'ncol': 1,
-        'columnspacing': 1.0,
-        'labelspacing': 0.0,
-    }
-    ax.legend(**leg_args)
+    if show_legends:
+        ion_legend = ax.legend(
+            handles=ion_handles,
+            fontsize=np.clip(fontsize-3, 5, np.inf),
+            loc='lower left', labelspacing=0.1, framealpha=0.6,
+        )
+        if has_ions:
+            ax.add_artist(ion_legend)
+        leg_args = {
+            'loc': (1.01, 0.0),
+            'fontsize': np.clip(fontsize-5, 5, np.inf),
+            'ncol': 1,
+            'columnspacing': 1.0,
+            'labelspacing': 0.0,
+        }
+        ax.legend(**leg_args)
 
     # Matplotlib black magic:
     def on_draw(event):
