@@ -861,6 +861,7 @@ def plot_vmr(
         ax = plt.subplot(111)
     else:
         ax = axis
+        fig = ax.get_figure()
     ax.set_position(position)
 
     for name in species:
@@ -910,6 +911,8 @@ def plot_vmr(
         """This will be called once the figure is drawn"""
         ax = event.canvas.figure.vmr_axis
         legend = ax.get_legend()
+        if ax is None or legend is None:
+            return
         height_ratio = (
             legend.get_window_extent().height / ax.get_window_extent().height
         )
