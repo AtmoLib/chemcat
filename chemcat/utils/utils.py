@@ -821,6 +821,8 @@ def plot_vmr(
 
     if rect is not None:
         position = rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]
+    elif axis is not None:
+        position = axis.get_position().bounds
     else:
         position = 0.09, 0.11, 0.79, 0.83
 
