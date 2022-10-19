@@ -5,6 +5,7 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #include <float.h>
+#include <math.h>
 
 #include "ind.h"
 #include "newton_raphson.h"
@@ -59,6 +60,19 @@ static PyObject *gibbs_energy_minimizer(PyObject *self, PyObject *args){
         if (nr_status == 1){
             return Py_BuildValue("i", 1);
         }
+
+        // Re-use variable, 1=OK, 0=There are NaNs in x
+        nr_status = 1;
+        for (i=0; i<nequations; i++){
+            nr_status &= isnormal(INDd(x,i));
+        }
+        // The values of x seem to vary unbounded, which could lead to
+        // take values above +/- DBL_MAX and break the code.
+        // Unless there is a way to constrain their growth, my current
+        // and very janky solution is to reset x:
+        if (nr_status == 0)
+            for (j=0; j<nequations; j++)
+                INDd(x,j) = 0.0;
 
         // Update values of pi lagrange multipliers and Delta ln(ybar)
         for (j=0; j<nequations-1; j++)
