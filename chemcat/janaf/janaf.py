@@ -303,10 +303,12 @@ def setup_network(input_species):
         heat = janaf_data[1]
         gibbs = janaf_data[2]
 
-        heat_capacity.append(si.interp1d(
-            temp, heat, fill_value='extrapolate'))
-        gibbs_free_energy.append(si.interp1d(
-            temp, gibbs, kind='cubic', fill_value='extrapolate'))
+        h_interp = si.interp1d(temp, heat, fill_value='extrapolate')
+        g_interp = si.interp1d(
+            temp, gibbs, fill_value='extrapolate', kind='cubic',
+        )
+        heat_capacity.append(h_interp)
+        gibbs_free_energy.append(g_interp)
         stoich_data.append(read_stoich(janaf_file=janaf))
 
     return (
