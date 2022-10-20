@@ -97,16 +97,17 @@ COLOR_DICT = {
     # Sulfurs:
     'S': 'cornflowerblue',
     'H2S': 'darkgoldenrod',
-    'HS': 'yellowgreen',
-    'SO': 'mediumseagreen',
+    'SH': 'yellowgreen',
+    'SO': 'xkcd:green',
     'SO2': 'skyblue',
+    'SiS': 'xkcd:wheat',
     # Aluminum:
     'Al': 'khaki',
     'AlOH': 'steelblue',
     'Al2O': 'seagreen',
     'OAlOH': 'tomato',
     'Ca': 'orange',
-    'Ca(OH)2': 'indigo',
+    'Ca(OH)2': 'xkcd:blue',
     'e': 'darkgreen',
     # Heavy metals:
     'Ti': 'crimson',
@@ -810,7 +811,7 @@ def plot_vmr(
     >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O '
     >>>     'e- H- H+ H2+ He+ '
     >>>     'Na Na- Na+ K K- K+ '
-    >>>     'Si S SiO SiH4 H2S HS SO SO2 SiS'
+    >>>     'Si S SiO SiH4 H2S SH SO SO2 SiS'
     >>> ).split()
 
     >>> net = cat.Network(pressure, temperature, molecs)
@@ -819,13 +820,17 @@ def plot_vmr(
     """
     species = list(species)
 
+    legend_loc = 'upper left'
     if rect is not None:
         position = rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]
     elif axis is not None:
         position = axis.get_position().bounds
     else:
-        position = 0.09, 0.11, 0.79, 0.83
-
+        if show_legends:
+            position = 0.09, 0.11, 0.79, 0.83
+            legend_loc = (1.01, 0.0)
+        else:
+            position = 0.09, 0.11, 0.87, 0.83
     if fignum == 316:
         fignum = 'Plotty McPltFace'
 
@@ -891,6 +896,15 @@ def plot_vmr(
     ax.set_xlabel('Volume mixing ratio', fontsize=fontsize)
     if title is not  None:
         ax.set_title(title, fontsize=fontsize)
+
+    ax.legend_args = {
+        'loc': legend_loc,
+        'fontsize': np.clip(fontsize-5, 5, np.inf),
+        'ncol': 1,
+        'columnspacing': 1.0,
+        'labelspacing': 0.0,
+        'handlelength': 1.5,
+    }
     if show_legends:
         ion_legend = ax.legend(
             handles=ion_handles,
@@ -899,21 +913,14 @@ def plot_vmr(
         )
         if has_ions:
             ax.add_artist(ion_legend)
-        leg_args = {
-            'loc': (1.01, 0.0),
-            'fontsize': np.clip(fontsize-5, 5, np.inf),
-            'ncol': 1,
-            'columnspacing': 1.0,
-            'labelspacing': 0.0,
-        }
-        ax.legend(**leg_args)
+        ax.legend(**ax.legend_args)
 
     # Matplotlib black magic:
     def on_draw(event):
         """This will be called once the figure is drawn"""
         ax = event.canvas.figure.vmr_axis
         legend = ax.get_legend()
-        if ax is None or legend is None:
+        if ax is None or legend is None or not fig.update_position:
             return
         height_ratio = (
             legend.get_window_extent().height / ax.get_window_extent().height
@@ -922,13 +929,15 @@ def plot_vmr(
         if ncols > 1:
             if fig.update_position:
                 ax.set_position([0.09, 0.11, 0.7, 0.83])
-            leg_args['ncol'] = ncols
-            ax.legend(**leg_args)
+            ax.legend_args['ncol'] = ncols
+            ax.legend(**ax.legend_args)
             fig.canvas.draw()
+        # Only run once:
+        fig.canvas.mpl_disconnect(cid)
 
     fig.vmr_axis = ax
-    fig.update_position = axis is None and rect is None
-    fig.canvas.mpl_connect('draw_event', on_draw)
+    fig.update_position = axis is None and rect is None and show_legends
+    cid = fig.canvas.mpl_connect('draw_event', on_draw)
 
     if savefig is not None:
         plt.savefig(savefig)
