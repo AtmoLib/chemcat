@@ -380,7 +380,7 @@ def test_plot_vmr():
         'e- H- H+ H2+ He+ '
         'Na Na- Na+ K K- K+ '
         'Ti TiO TiO2 Ti+ TiO+ V VO VO2 V+ '
-        'Si S SiO SiH4 H2S HS SO SO2 SiS'
+        'Si S SiO SiH4 H2S SH SO SO2 SiS'
     ).split()
 
     net = cat.Network(pressure, temperature, species)

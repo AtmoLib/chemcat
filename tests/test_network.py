@@ -177,11 +177,11 @@ def test_network_duplicated_aliased_species(capfd):
     nlayers = 81
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
-    molecules = ['H', 'S',  'H2O', 'HS', 'H2S', 'SH']
+    molecules = ['H', 'S',  'H2O', 'SH', 'H2S', 'SH']
     net = cat.Network(pressure, temperature, molecules)
     vmr = net.thermochemical_equilibrium()
 
-    good_molecules = ['H', 'S', 'H2O', 'HS', 'H2S']
+    good_molecules = ['H', 'S', 'H2O', 'SH', 'H2S']
     good_net = cat.Network(pressure, temperature, good_molecules)
     expected_vmr = good_net.thermochemical_equilibrium()
 
@@ -193,7 +193,7 @@ def test_network_duplicated_aliased_species(capfd):
         [2, 0, 1],
     ])
     expected_provenance = ['janaf', 'janaf', 'janaf', 'janaf', 'janaf']
-    expected_species = ['H', 'S', 'H2O', 'HS', 'H2S']
+    expected_species = ['H', 'S', 'H2O', 'SH', 'H2S']
 
     captured = capfd.readouterr()
     assert 'These species are duplicates of others in input' in captured.out

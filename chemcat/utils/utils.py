@@ -97,7 +97,7 @@ COLOR_DICT = {
     # Sulfurs:
     'S': 'cornflowerblue',
     'H2S': 'darkgoldenrod',
-    'HS': 'yellowgreen',
+    'SH': 'yellowgreen',
     'SO': 'xkcd:green',
     'SO2': 'skyblue',
     'SiS': 'xkcd:wheat',
@@ -811,7 +811,7 @@ def plot_vmr(
     >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O '
     >>>     'e- H- H+ H2+ He+ '
     >>>     'Na Na- Na+ K K- K+ '
-    >>>     'Si S SiO SiH4 H2S HS SO SO2 SiS'
+    >>>     'Si S SiO SiH4 H2S SH SO SO2 SiS'
     >>> ).split()
 
     >>> net = cat.Network(pressure, temperature, molecs)
