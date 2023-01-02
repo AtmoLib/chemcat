@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Blecic and Cubillos
+# Copyright (c) 2022-2023 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
@@ -519,6 +519,7 @@ def set_element_abundance(
     # Scale the metals' abundances:
     imetals = np.isin(elements, 'H He D'.split(), invert=True)
     elemental_abundances[imetals] += metallicity
+
     # Set custom elemental abundances:
     for element, abundance in e_abundances.items():
         elemental_abundances[np.array(elements) == element] = abundance

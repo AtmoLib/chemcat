@@ -1,9 +1,10 @@
-# Copyright (c) 2022 Blecic and Cubillos
+# Copyright (c) 2022-2023 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 __all__ = [
     'is_in',
     'read_thermo_build',
+    #'write_thermo_build',
     'heat_func',
     'gibbs_func',
     'setup_network',
@@ -24,6 +25,7 @@ import _utils as u
 def is_in(species, thermo_file=None):
     r"""
     Element-wise check whether species name exist in CEA database.
+
     Parameters
     ----------
     species: 1D iterable of strings
@@ -70,6 +72,7 @@ def read_thermo_build(species, thermo_file=None):
     """
     Read data from NASA's CEA thermoBuild file.
     https://cearun.grc.nasa.gov/ThermoBuild/index_ds.html
+    https://ntrs.nasa.gov/citations/20020085330
 
     Parameters
     ----------

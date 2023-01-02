@@ -1,3 +1,6 @@
+# Copyright (c) 2022-2023 Blecic and Cubillos
+# chemcat is open-source software under the GPL-2.0 license (see LICENSE)
+
 import numpy as np
 
 expected_dex_asplund_2009 = np.array([
