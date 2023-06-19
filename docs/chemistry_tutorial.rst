@@ -1,5 +1,3 @@
-.. _tutorial:
-
 Chemistry Tutorial
 ==================
 
@@ -14,7 +12,7 @@ or as a `jupyter notebook here
 
 Let’s start off importing the necessary modules:
 
-.. code:: python
+.. code:: ipython3
 
     import chemcat as cat
     import chemcat.utils as u
@@ -30,9 +28,8 @@ pressure-temperature profile and a list of species.
 This creates a chemical network assuming solar elemental composition and
 a simple CHNO compostion (taking values from Asplund et al. 2021):
 
-.. code:: python
+.. code:: ipython3
 
-    # Setup:
     nlayers = 81
     temperature = np.tile(1200.0, nlayers)
     pressure = np.logspace(-8, 3, nlayers)
@@ -40,12 +37,12 @@ a simple CHNO compostion (taking values from Asplund et al. 2021):
     
     net = cat.Network(pressure, temperature, molecules)
 
-.. code:: python
+.. code:: ipython3
 
     # To compute thermochemical equilibrium abundances, run this method:
     vmr = net.thermochemical_equilibrium()
 
-.. code:: python
+.. code:: ipython3
 
     # and plot the results:
     title = f'T = {temperature[0]} K'
@@ -59,7 +56,7 @@ a simple CHNO compostion (taking values from Asplund et al. 2021):
 Evaluate at a different temperature
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code:: python
+.. code:: ipython3
 
     # Simply, provide a new temperature profile in the call:
     temp_2800K = np.tile(2800, nlayers)
@@ -80,7 +77,7 @@ Object’s data
 The ``net`` object contains all the physical data of the atmosphere,
 which you can query at any point:
 
-.. code:: python
+.. code:: ipython3
 
     print(f'Pressure profile (bar):\n{net.pressure}')
     print(f'\nTemperature profile (kelvin):\n{net.temperature}')
@@ -140,7 +137,7 @@ which you can query at any point:
      4.89778819e-04]
     
     Elemental composition source:
-    /Users/user/envs/python36/chemcat/data/asplund_2021_solar_abundances.dat
+    /Users/user/envs/py39/chemcat/chemcat/data/asplund_2021_solar_abundances.dat
     
     
     Molecular composition:
@@ -182,7 +179,7 @@ Custom metallicity
 Use the ``metallicity`` argument to set a custom metallicity relative to
 solar (in dex units)
 
-.. code:: python
+.. code:: ipython3
 
     # E.g., solar metallicity (default):
     net = cat.Network(pressure, temperature, molecules)
@@ -228,7 +225,7 @@ solar (in dex units)
 Note that once you modify a physical property, it stays modified until
 you re-set it again:
 
-.. code:: python
+.. code:: ipython3
 
     print(f'[M/H] = {net.metallicity:.2f}')
     print(f'Elemental abundances:\n{net.element_rel_abundance}')
@@ -267,9 +264,10 @@ Custom elemental abundances
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``e_abundances`` argument to set custom elemental abundances as
-a dictionary: (values in dex units, relative to H=12.0):
+a dictionary: (values in dex units, relative to H=12.0). Note that
+``e_abundances`` override values modified by ``metallicity``.
 
-.. code:: python
+.. code:: ipython3
 
     # E.g., set carbon abundance to 10^-4
     e_abundances = {
@@ -310,9 +308,10 @@ Elemental abundances relative to solar
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``e_scale`` argument to set custom elemental abundances as a
-dictionary (values in dex units, relative to solar):
+dictionary (values in dex units, **relative to solar**). Note that
+``e_scale`` values override values modified by ``metallicity``.
 
-.. code:: python
+.. code:: ipython3
 
     # E.g., Set 10x solar carbon, 1x nitrogen, and 1x oxygen
     e_scale = {
@@ -347,7 +346,7 @@ Note that the dictionary keys define the pair of elements separated by
 an underscore. Only the first element abundance is modified, and is
 scaled relative to the second element’s abundance.
 
-.. code:: python
+.. code:: ipython3
 
     # E.g., set carbon abundance to 1.5x times the oxygen abundance:
     e_ratio = {
@@ -371,7 +370,7 @@ scaled relative to the second element’s abundance.
 
 And you can combine all these properties at once:
 
-.. code:: python
+.. code:: ipython3
 
     # Custom metallicity, C/O ratio, and temperatures:
     
@@ -430,7 +429,7 @@ Charge conservation
    names followed by a ``+`` or a ``-``
 -  Normally, you always need to include an electron in the mix: ‘e-’
 
-.. code:: python
+.. code:: ipython3
 
     nlayers = 81
     temp = 2000.0
@@ -456,9 +455,10 @@ Charge conservation
     ax = u.plot_vmr(pressure, vmr, net.species, vmr_range=vmr_range, fignum=40)
 
 
+
 .. image:: chemistry_tutorial_files/chemistry_tutorial_23_0.png
+
 
 .. |br| raw:: html
 
    <br/>
-

@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'chemcat'
-copyright = u'2022-2023, Jasmina Blecic and Patricio Cubillos'
+copyright = f'2022-{date.today().year}, Jasmina Blecic and Patricio Cubillos'
 author = u'Patricio Cubillos and Jasmina Blecic'
 
 # The version info for the project you're documenting, acts as replacement for
