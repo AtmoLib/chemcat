@@ -427,12 +427,12 @@ def set_element_abundance(
         abundance in dex units relative to H=12.0.
         These values (if any) override metallicity.
     e_scale: Dictionary of element-scaling pairs
-        Set custom elemental abundances by scaling from its solar value.
+        Set custom elemental abundances by scaling relative to solar
+        values in dex units.
         The dict contains the name of the element and their custom
-        scaling factor in dex units, e.g., for 2x solar carbon set
-        e_scale = {'C': np.log10(2.0)}.
-        This argument modifies the abundances on top of any custom
-        metallicity and e_abundances.
+        scaling factor in dex units, e.g., for 5x solar carbon set
+        e_scale = {'C': 0.7}.   # log10(5.0) = 0.7
+        This argument modifies overrides metallicity and e_abundances.
     e_ratio: Dictionary of element-ratio pairs
         Set custom elemental abundances by scaling relative to another
         element.
@@ -522,19 +522,22 @@ def set_element_abundance(
 
     # Set custom elemental abundances:
     for element, abundance in e_abundances.items():
-        elemental_abundances[np.array(elements) == element] = abundance
+        i = np.array(elements) == element
+        elemental_abundances[i] = abundance
 
-    # Scale custom elemental abundances (additive to metallicity):
+    # Scale custom elemental abundances (overwrite metallicity):
     for element, fscale in e_scale.items():
-        elemental_abundances[np.array(elements) == element] += fscale
+        i = np.array(elements) == element
+        i_base = np.array(base_composition) == element
+        elemental_abundances[i] = base_dex_abundances[i_base] + fscale
 
     # Set custom elemental ratios:
     for element, ratio in e_ratio.items():
         element1, element2 = element.split('_')
-        idx1 = np.array(elements) == element1
-        idx2 = np.array(elements) == element2
+        i1 = np.array(elements) == element1
+        i2 = np.array(elements) == element2
         log_ratio = np.log10(ratio)
-        elemental_abundances[idx1] = elemental_abundances[idx2] + log_ratio
+        elemental_abundances[i1] = elemental_abundances[i2] + log_ratio
 
     # Convert elemental log VMR (relative to H=12.0) to VMR (rel. to H=1.0):
     elemental_abundances = 10**(elemental_abundances-12.0)
