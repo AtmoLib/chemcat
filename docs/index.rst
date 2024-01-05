@@ -71,7 +71,7 @@ Be Kind
 =======
 
 Please cite this paper if you found ``chemcat`` useful for your research:
-  `Cubillos, Blecic, et al. (2022): Radiative and Thermochemical Equilibrium Calculations and Application for Warm-Jupiter Exoplanets. <http://ui.adsabs.harvard.edu/abs/2022journ.000....0C>`_.
+  `Cubillos, Blecic, et al. (2024): Radiative and Thermochemical Equilibrium Calculations and Application for Warm-Jupiter Exoplanets. <http://ui.adsabs.harvard.edu/abs/2022journ.000....0C>`_
 
 We welcome your feedback or inquiries, please refer them to:
 
