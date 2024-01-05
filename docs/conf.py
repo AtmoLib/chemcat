@@ -21,8 +21,7 @@ import sys
 import re
 from datetime import date
 
-# Do not add path to the package (following example from astropy).
-#sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('..'))
 import chemcat
 
 # -- General configuration ------------------------------------------------
