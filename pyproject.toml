@@ -3,6 +3,5 @@ requires = [
     'setuptools>=40.8.0',
     'wheel',
     'oldest-supported-numpy',
-    ]
-
+]
 build-backend = "setuptools.build_meta"

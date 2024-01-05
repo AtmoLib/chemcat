@@ -8,7 +8,7 @@ License
 =======
 
 **chemcat**: Chemistry Calculator for Atmospheres, |br|
-Copyright (C) 2022-2023 Jasmina Blecic and Patricio Cubillos
+Copyright (C) 2022-2024 Jasmina Blecic and Patricio Cubillos
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
