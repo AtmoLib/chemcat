@@ -5,3 +5,24 @@ requires = [
     'oldest-supported-numpy',
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "chemcat"
+description = "Chemistry Calculator for Atmospheres"
+readme = "README.md"
+license = { file = "LICENSE" }
+
+#https://packaging.python.org/en/latest/guides/single-sourcing-package-version/
+dynamic = ["version"]
+
+requires-python = ">=3.6"
+authors = [
+  {name = "Patricio Cubillos", email = "pcubillos@fulbrightmail.org"},
+  {name = "Jasmina Blecic", email = "jasmina@nyu.edu"},
+]
+
+
+[tool.setuptools.dynamic]
+version = {attr = "chemcat.version.__version__"}
+
+

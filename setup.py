@@ -51,9 +51,9 @@ with open('README.md', 'r') as f:
 
 setup(
     name = 'chemcat',
-    version = get_version('chemcat'),
-    author = 'Jasmina Blecic and Patricio Cubillos',
-    author_email = 'patricio.cubillos@oeaw.ac.at',
+    #version = get_version('chemcat'),
+    #author = 'Jasmina Blecic and Patricio Cubillos',
+    #author_email = 'patricio.cubillos@oeaw.ac.at',
     url = 'https://github.com/atmolib/chemcat',
     packages = setuptools.find_packages(),
     package_data = package_data,
@@ -66,10 +66,10 @@ setup(
     tests_require = [
         'pytest>=3.9',
         ],
-    license = 'GPLv2',
-    description = 'Chemistry Calculator for Atmospheres',
-    long_description = long_description,
-    long_description_content_type = 'text/markdown',
+    #license = 'GPLv2',
+    #description = 'Chemistry Calculator for Atmospheres',
+    #long_description = long_description,
+    #long_description_content_type = 'text/markdown',
     include_dirs = inc,
     ext_modules = extensions,
 )
