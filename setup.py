@@ -40,13 +40,8 @@ package_data = {
 
 
 setup(
-    name = 'chemcat',
-    url = 'https://github.com/atmolib/chemcat',
     packages = setuptools.find_packages(),
     package_data = package_data,
-    tests_require = [
-            'pytest>=3.9',
-        ],
     include_dirs = inc,
     ext_modules = extensions,
 )

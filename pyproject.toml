@@ -28,6 +28,13 @@ dependencies = [
     'more-itertools>=8.4.0',
 ]
 
+[project.optional-dependencies]
+test = [
+    'pytest>=3.9',
+]
+
+[project.urls]
+"Homepage" = "https://github.com/atmolib/chemcat"
 
 [tool.setuptools.dynamic]
 version = {attr = "chemcat.version.__version__"}
