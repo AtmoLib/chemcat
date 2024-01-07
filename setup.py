@@ -9,14 +9,6 @@ from setuptools import setup, Extension
 from numpy import get_include
 
 
-def get_version(package):
-    """Return package version as listed in __version__ in version.py"""
-    path = os.path.join(os.path.dirname(__file__), package, 'version.py')
-    with open(path, 'rb') as f:
-        init_py = f.read().decode('utf-8')
-    return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
-
-
 srcdir = 'src_c/'  # C-code source folder
 incdir = 'src_c/include/'  # Include filder with header files
 
@@ -46,30 +38,15 @@ package_data = {
     ]
 }
 
-with open('README.md', 'r') as f:
-    long_description = f.read()
 
 setup(
     name = 'chemcat',
-    #version = get_version('chemcat'),
-    #author = 'Jasmina Blecic and Patricio Cubillos',
-    #author_email = 'patricio.cubillos@oeaw.ac.at',
     url = 'https://github.com/atmolib/chemcat',
     packages = setuptools.find_packages(),
     package_data = package_data,
-    install_requires = [
-        'numpy>=1.19.1',
-        'scipy>=1.5.2',
-        'matplotlib>=3.3.4',
-        'more-itertools>=8.4.0',
-        ],
     tests_require = [
-        'pytest>=3.9',
+            'pytest>=3.9',
         ],
-    #license = 'GPLv2',
-    #description = 'Chemistry Calculator for Atmospheres',
-    #long_description = long_description,
-    #long_description_content_type = 'text/markdown',
     include_dirs = inc,
     ext_modules = extensions,
 )

@@ -21,6 +21,13 @@ authors = [
   {name = "Jasmina Blecic", email = "jasmina@nyu.edu"},
 ]
 
+dependencies = [
+    'numpy>=1.19.1',
+    'scipy>=1.5.2',
+    'matplotlib>=3.3.4',
+    'more-itertools>=8.4.0',
+]
+
 
 [tool.setuptools.dynamic]
 version = {attr = "chemcat.version.__version__"}
