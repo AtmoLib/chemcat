@@ -31,17 +31,7 @@ extensions = [
     for cfile in cfiles
 ]
 
-package_data = {
-    'chemcat': [
-        'data/*',
-        'data/janaf/*',
-    ]
-}
-
-
 setup(
-    packages = setuptools.find_packages(),
-    package_data = package_data,
     include_dirs = inc,
     ext_modules = extensions,
 )
