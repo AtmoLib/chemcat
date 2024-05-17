@@ -19,7 +19,7 @@ NASA-ThermoBuild databases of thermochemical properties (see section
 :ref:`tutorial_databases`).
 
 Take a look at the :ref:`quick_example` section to get up to speed in
-computing ``chemcat``.  The :ref:`tutorial` section showcases the
+computing ``chemcat``.  The :ref:`chemistry_tutorial` section showcases the
 multiple ways in which ``chemcat`` enables a parameterization of the
 atmospheric composition.
 
@@ -89,7 +89,7 @@ thermochemical equilibrium for an isothermal atmosphere (at
     net = cat.Network(pressure, temperature, molecules)
     vmr = net.thermochemical_equilibrium()
 
-See section :ref:`tutorial` for an in-depth tutorial of the
+See section :ref:`chemistry_tutorial` for an in-depth tutorial of the
 ``chemcat`` capabilities.
 Additionally, all low-and mid-level routines can be found in the
 package's :ref:`API`.
