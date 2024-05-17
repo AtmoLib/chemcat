@@ -1,2 +1,1 @@
-sphinx-rtd-theme>=2.0.0
 furo==2023.9.10
