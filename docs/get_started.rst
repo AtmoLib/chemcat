@@ -16,7 +16,7 @@ parameterize the atmospheric composition, including:
 
 ``chemcat`` also provides an interface to access the NIST-JANAF and
 NASA-ThermoBuild databases of thermochemical properties (see section
-:ref:`tutorial_databases`).
+`Database Tutorial <database_tutorial.ipynb>`_).
 
 Take a look at the :ref:`quick_example` section to get up to speed in
 computing ``chemcat``.  The `Chemistry Tutorial <./chemistry_tutorial.ipynb>`_ section showcases the
