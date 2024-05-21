@@ -186,7 +186,8 @@ def heat_func(a_coeffs, t_coeffs):
     -------
     heat: Callable
         A function heat(temperature) that evaluates the molar heat
-        capacity, cp(T)/R, for a given temperature input
+        capacity at constant pressure (divided by the universal gas
+        constant), cp(T)/R, for a given temperature input
         (which can be a single value or a 1D iterable).
 
     Examples
@@ -207,8 +208,7 @@ def heat_func(a_coeffs, t_coeffs):
             temperature = [temperature]
         temperature = np.array(temperature, np.double)
 
-        heat_capacity = u.heat(
-            temperature, a_coeffs, t_coeffs)
+        heat_capacity = u.heat(temperature, a_coeffs, t_coeffs)
         return heat_capacity
     return heat
 
