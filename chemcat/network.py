@@ -213,8 +213,9 @@ class Network(object):
 
     def heat_capacity(self, temperature=None):
         """
-        Evaluate the heat capacity of each species in the network
-        at the given temperature (default to self.temperature if needed).
+        Compute Cp/R(temperature) for each species in the network,
+        where Cp is the molar heat capacity at constant pressure and
+        R is the universal gas constant (8.31 J mol-1 K-1).
         """
         if temperature is None:
             temperature = self.temperature
