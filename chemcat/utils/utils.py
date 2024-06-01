@@ -770,9 +770,10 @@ def plot_vmr(
         Volume mixing ratios of shape [nlayers, nspecies].
     species: 1D string iterable
         Names of the species in vmr.
-    colors: 1D iterable of strings
-        Color names to assign (sequentially) to the species.
+    colors: 1D iterable of strings or dict
         If None, default to chemcat.utils.COLOR_DICT values.
+        If list, color names to assign (sequentially) to the species.
+        If dict, the name--color pairs for each neutral species.
         Note that different ionic variations of a same species
         (e.g., H, H+, H-) are assigned a same color, but differ
         in line style.
@@ -847,6 +848,8 @@ def plot_vmr(
 
     if colors is None:
         colors = resolve_colors(species)
+    elif isinstance(colors, dict):
+        pass
     else:
         colors = {
             spec: color
