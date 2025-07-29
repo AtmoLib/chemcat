@@ -396,8 +396,12 @@ def read_elemental(element_file):
     N :   7.830
     O :   8.690
     """
-    elements, dex = np.loadtxt(
-        element_file, dtype=str, comments='#', usecols=(1,2), unpack=True)
+    with warnings.catch_warnings():
+        # Ignore non-breaking warning for empty rows
+        warnings.simplefilter('ignore', category=UserWarning)
+        elements, dex = np.loadtxt(
+            element_file, dtype=str, comments='#', usecols=(1,2), unpack=True,
+        )
     dex_abundances = np.array(dex, float)
     return elements, dex_abundances
 
