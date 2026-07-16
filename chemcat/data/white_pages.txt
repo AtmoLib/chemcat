@@ -21,4 +21,5 @@ OAlH      HAlO
 OAlOH     HAlO2
 ONO-      NO2-
 SSO       S2O
+COS       COS               OCS
 None      C4H2,butadiyne    C4H2
