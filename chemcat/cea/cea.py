@@ -4,9 +4,8 @@
 __all__ = [
     'is_in',
     'read_thermo_build',
-    #'write_thermo_build',
-    'heat_func',
-    'gibbs_func',
+    'Heat',
+    'Gibbs',
     'setup_network',
     'find_species',
 ]
@@ -170,53 +169,72 @@ def read_thermo_build(species, thermo_file=None):
     return thermo_data
 
 
-def heat_func(a_coeffs, t_coeffs):
+class Heat():
     """
-    Generate a callable that evaluates the molar heat capacity
+    A class to evaluate the molar heat capacity
     at a given temperature array.
 
     Parameters
     ----------
-    a_coeffs: 2D float ndarray
+    species: string
+        Species name.  If provided, ignore coefficient inputs.
+    a_coeffs: 1D float ndarray
         Polynomial coefficients to reproduce the heat capacity data.
     t_coeffs: 1D float ndarray
         Temperature intervals of validity for each set of coefficients.
-
-    Returns
-    -------
-    heat: Callable
-        A function heat(temperature) that evaluates the molar heat
-        capacity at constant pressure (divided by the universal gas
-        constant), cp(T)/R, for a given temperature input
-        (which can be a single value or a 1D iterable).
 
     Examples
     --------
     >>> import chemcat.cea as cea
 
-    >>> data = cea.read_thermo_build(['H2O'])[0]
-    >>> heat = cea.heat_func(
-    >>>     data['a_coeffs'], data['t_coeffs'])
-
+    >>> heat = cea.Heat('H2O')
     >>> print(heat(300.0))
     [4.04063805]
     >>> print(heat([300.0, 1000.0, 3000.0]))
     [4.04063805 4.96614188 6.8342561 ]
     """
-    def heat(temperature):
+    def __init__(self, species=None, a_coeffs=None, t_coeffs=None):
+        if species is not None:
+            data = read_thermo_build([species])[0]
+            a_coeffs = data['a_coeffs']
+            t_coeffs = data['t_coeffs']
+        self.a_coeffs = a_coeffs
+        self.t_coeffs = t_coeffs
+
+    def __call__(self, temperature):
+        """
+        Parameters
+        ----------
+        temperature: scalar of 1D float
+            Polynomial coefficients to reproduce the heat capacity data.
+
+        Returns
+        -------
+        heat_capacity: 1D array
+            Evaluate the molar heat capacity at constant pressure
+            (divided by the universal gas constant), cp(T)/R
+
+        Examples
+        --------
+        >>> import chemcat.cea as cea
+
+        >>> heat = cea.Heat('H2O')
+        >>> print(heat(300.0))
+        [4.04063805]
+        >>> print(heat([300.0, 1000.0, 3000.0]))
+        [4.04063805 4.96614188 6.8342561 ]
+        """
         if not isinstance(temperature, Iterable):
             temperature = [temperature]
         temperature = np.array(temperature, np.double)
 
-        heat_capacity = u.heat(temperature, a_coeffs, t_coeffs)
+        heat_capacity = u.heat(temperature, self.a_coeffs, self.t_coeffs)
         return heat_capacity
-    return heat
 
 
-def gibbs_func(a_coeffs, b_coeffs, t_coeffs):
+class Gibbs():
     """
-    Generate a callable that evaluates the Gibbs free energy
-    for a given temperature array.
+    A class to evaluate the Gibbs free energy for a given temperature array.
 
     Parameters
     ----------
@@ -227,35 +245,59 @@ def gibbs_func(a_coeffs, b_coeffs, t_coeffs):
     t_coeffs: 1D float ndarray
         Temperature intervals of validity for each set of coefficients.
 
-    Returns
-    -------
-    gibbs: Callable
-        A function gibbs(temperature) that evaluates the Gibbs free
-        energy, G(T)/RT, for a given temperature input (which can be
-        a single value or a 1D iterable).
-
     Examples
     --------
     >>> import chemcat.cea as cea
 
-    >>> data = cea.read_thermo_build(['H2O'])[0]
-    >>> gibbs = cea.gibbs_func(
-    >>>     data['a_coeffs'], data['b_coeffs'], data['t_coeffs'])
-
+    >>> gibbs = cea.Gibbs('H2O')
     >>> print(gibbs(300.0))
     [-119.66025955]
     >>> print(gibbs([300.0, 1000.0, 3000.0]))
     [-119.66025955  -53.94898416  -39.09425268]
     """
-    def gibbs(temperature):
+    def __init__(self, species=None, a_coeffs=None, b_coeffs=None, t_coeffs=None):
+        if species is not None:
+            data = read_thermo_build([species])[0]
+            a_coeffs =  data['a_coeffs']
+            b_coeffs =  data['b_coeffs']
+            t_coeffs =  data['t_coeffs']
+
+        self.a_coeffs = a_coeffs
+        self.b_coeffs = b_coeffs
+        self.t_coeffs = t_coeffs
+
+    def __call__(self, temperature):
+        """
+        Parameters
+        ----------
+        temperature: scalar of 1D float
+            Polynomial coefficients to reproduce the heat capacity data.
+
+        Returns
+        -------
+        gibbs_free_energy: 1D array
+            The Gibbs free energy, G(T)/RT, at temperature input
+
+        Examples
+        --------
+        >>> import chemcat.cea as cea
+
+        >>> data = cea.read_thermo_build(['H2O'])[0]
+        >>> gibbs = cea.gibbs_func(
+        >>>     data['a_coeffs'], data['b_coeffs'], data['t_coeffs'])
+
+        >>> print(gibbs(300.0))
+        [-119.66025955]
+        >>> print(gibbs([300.0, 1000.0, 3000.0]))
+        [-119.66025955  -53.94898416  -39.09425268]
+        """
         if not isinstance(temperature, Iterable):
             temperature = [temperature]
         temperature = np.array(temperature, np.double)
 
-        free_energy = u.gibbs(
-            temperature, a_coeffs, b_coeffs, t_coeffs)
+        free_energy = u.gibbs(temperature, self.a_coeffs, self.b_coeffs, self.t_coeffs)
         return free_energy
-    return gibbs
+
 
 
 def setup_network(input_species):
@@ -325,10 +367,14 @@ def setup_network(input_species):
     gibbs_free_energy = []
     stoich_data = []
     for data in thermo_data:
-        heat_capacity.append(
-            heat_func(data['a_coeffs'], data['t_coeffs']))
-        gibbs_free_energy.append(
-            gibbs_func(data['a_coeffs'], data['b_coeffs'], data['t_coeffs']))
+        a_coeffs = data['a_coeffs']
+        b_coeffs = data['b_coeffs']
+        t_coeffs = data['t_coeffs']
+        heat = Heat(a_coeffs=a_coeffs, t_coeffs=t_coeffs)
+        gibbs = Gibbs(a_coeffs=a_coeffs, b_coeffs=b_coeffs, t_coeffs=t_coeffs)
+
+        heat_capacity.append(heat)
+        gibbs_free_energy.append(gibbs)
         stoich_data.append(data['stoich'])
 
     return (
