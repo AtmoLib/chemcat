@@ -23,12 +23,11 @@ conda install -c conda-forge chemcat
 
 ### Cite as:
 ```bibtex
-@ARTICLE{CubillosBlecicEtal2024journalRadiativeChemicalEquilibrium,
-       author = {{Cubillos}, Patricio and {Blecic}, Jasmina and {Fossati}, Luca},
-        title = "{Radiative and Chemical Equilibrium Calculations with Application to Exoplanets}",
-      journal = {journal},
-         year = 2024,
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2024journ.000....0C},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+@ARTICLE{CubillosBlecicEtal2026mnrasPyratbay2,
+       author = {{Cubillos}, Patricio and {Blecic}, Jasmina and {Shulyak}, Denis and {Fossati}, Luca},
+        title = "{Pyrat Bay 2.0: an Upgraded Framework for Exoplanet Atmosphere Modeling in the JWST Era}",
+      journal = {MNRAS},
+         year = 2026,
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2026mnras.000....0C},
 }
 ```

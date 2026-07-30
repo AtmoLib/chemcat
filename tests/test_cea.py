@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2025 Blecic and Cubillos
+# Copyright (c) 2022-2026 Blecic and Cubillos
 # chemcat is open-source software under the GPL-2.0 license (see LICENSE)
 
 import numpy as np
@@ -96,19 +96,24 @@ def test_read_thermo_cea_stoich_ions():
     'temp',
     [300, 300.0],
 )
-def test_heat_func_cea_single_value(temp):
+def test_heat_cea_coeffs_single_value(temp):
     data = cea.read_thermo_build(['H2O'])[0]
-    heat = cea.heat_func(data['a_coeffs'], data['t_coeffs'])
+    heat = cea.Heat(a_coeffs=data['a_coeffs'], t_coeffs=data['t_coeffs'])
     np.testing.assert_allclose(heat(temp), np.array([4.04063805]))
+
+
+def test_heat_cea_species_single_value():
+    heat = cea.Heat('H2O')
+    np.testing.assert_allclose(heat(300.0), np.array([4.04063805]))
 
 
 @pytest.mark.parametrize(
     'temp',
     ([300, 1000.0, 3000.0], np.array([300, 1000.0, 3000.0]))
 )
-def test_heat_func_cea_array(temp):
+def test_heat_cea_array(temp):
     data = cea.read_thermo_build(['H2O'])[0]
-    heat = cea.heat_func(data['a_coeffs'], data['t_coeffs'])
+    heat = cea.Heat('H2O')
     expected_heat = np.array([4.04063805, 4.96614188, 6.8342561])
     np.testing.assert_allclose(heat(temp), expected_heat)
 
