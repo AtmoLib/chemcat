@@ -14,20 +14,11 @@ _______
 
     .. code-block:: pycon
 
-        Descriptor objects that automate setting the elemental abundances.
-
-        To understand this sorcery see:
-        https://docs.python.org/3/howto/descriptor.html
-
-
         Initialize self.  See help(type(self)) for accurate signature.
 
 .. py:class:: Network(pressure, temperature, input_species, metallicity=0.0, e_abundances={}, e_scale={}, e_ratio={}, e_source='asplund_2021', sources=['janaf', 'cea'])
 
     .. code-block:: pycon
-
-        A chemcat chemical network object.
-
 
         Parameters
         ----------
@@ -109,8 +100,9 @@ _______
     .. py:method:: heat_capacity(temperature=None)
     .. code-block:: pycon
 
-        Evaluate the heat capacity of each species in the network
-        at the given temperature (default to self.temperature if needed).
+        Compute Cp/R(temperature) for each species in the network,
+        where Cp is the molar heat capacity at constant pressure and
+        R is the universal gas constant (8.31 J mol-1 K-1).
 
     .. py:method:: thermochemical_equilibrium(temperature=None, metallicity=None, e_abundances=None, e_scale=None, e_ratio=None, savefile=None)
     .. code-block:: pycon
@@ -165,6 +157,7 @@ ___________
 .. code-block:: pycon
 
     Element-wise check whether species name exist in CEA database.
+
     Parameters
     ----------
     species: 1D iterable of strings
@@ -192,6 +185,7 @@ ___________
 
     Read data from NASA's CEA thermoBuild file.
     https://cearun.grc.nasa.gov/ThermoBuild/index_ds.html
+    https://ntrs.nasa.gov/citations/20020085330
 
     Parameters
     ----------
@@ -227,73 +221,17 @@ ___________
     >>> # Network will all species from the database:
     >>> all_thermo_data = cea.read_thermo_build(species=None)
 
-.. py:function:: heat_func(a_coeffs, t_coeffs)
-.. code-block:: pycon
+.. py:class:: Heat(species=None, a_coeffs=None, t_coeffs=None)
 
-    Generate a callable that evaluates the molar heat capacity
-    at a given temperature array.
+    .. code-block:: pycon
 
-    Parameters
-    ----------
-    a_coeffs: 2D float ndarray
-        Polynomial coefficients to reproduce the heat capacity data.
-    t_coeffs: 1D float ndarray
-        Temperature intervals of validity for each set of coefficients.
+        Initialize self.  See help(type(self)) for accurate signature.
 
-    Returns
-    -------
-    heat: Callable
-        A function heat(temperature) that evaluates the molar heat
-        capacity, cp(T)/R, for a given temperature input
-        (which can be a single value or a 1D iterable).
+.. py:class:: Gibbs(species=None, a_coeffs=None, b_coeffs=None, t_coeffs=None)
 
-    Examples
-    --------
-    >>> import chemcat.cea as cea
+    .. code-block:: pycon
 
-    >>> data = cea.read_thermo_build(['H2O'])[0]
-    >>> heat = cea.heat_func(
-    >>>     data['a_coeffs'], data['t_coeffs'])
-
-    >>> print(heat(300.0))
-    [4.04063805]
-    >>> print(heat([300.0, 1000.0, 3000.0]))
-    [4.04063805 4.96614188 6.8342561 ]
-
-.. py:function:: gibbs_func(a_coeffs, b_coeffs, t_coeffs)
-.. code-block:: pycon
-
-    Generate a callable that evaluates the Gibbs free energy
-    for a given temperature array.
-
-    Parameters
-    ----------
-    a_coeffs: 2D float ndarray
-        Polynomial coefficients to reproduce the heat capacity data.
-    b_coeffs: 2D float ndarray
-        Integration constants to obtain the enthalpy and entropy.
-    t_coeffs: 1D float ndarray
-        Temperature intervals of validity for each set of coefficients.
-
-    Returns
-    -------
-    gibbs: Callable
-        A function gibbs(temperature) that evaluates the Gibbs free
-        energy, G(T)/RT, for a given temperature input (which can be
-        a single value or a 1D iterable).
-
-    Examples
-    --------
-    >>> import chemcat.cea as cea
-
-    >>> data = cea.read_thermo_build(['H2O'])[0]
-    >>> gibbs = cea.gibbs_func(
-    >>>     data['a_coeffs'], data['b_coeffs'], data['t_coeffs'])
-
-    >>> print(gibbs(300.0))
-    [-119.66025955]
-    >>> print(gibbs([300.0, 1000.0, 3000.0]))
-    [-119.66025955  -53.94898416  -39.09425268]
+        Initialize self.  See help(type(self)) for accurate signature.
 
 .. py:function:: setup_network(input_species)
 .. code-block:: pycon
@@ -675,7 +613,7 @@ _____________
 .. py:data:: ROOT
 .. code-block:: pycon
 
-  '/Users/username/envs/proj/lib/python3.9/site-packages/chemcat/'
+  '/home/pcubillos/Dropbox/IWF/projects/2022_chemcat/chemcat/'
 
 .. py:data:: COLORS
 .. code-block:: pycon
@@ -685,7 +623,7 @@ _____________
 .. py:data:: COLOR_DICT
 .. code-block:: pycon
 
-  {'H': 'blue', 'H2': 'deepskyblue', 'He': 'olive', 'C': 'coral', 'CH4': 'darkorange', 'CO': 'limegreen', 'CO2': 'red', 'HCN': 'dimgray', 'C2H2': 'pink', 'C2H4': 'deeppink', 'N': 'darkviolet', 'NH3': 'magenta', 'N2': 'gold', 'O': 'greenyellow', 'H2O': 'navy', 'OH': 'darkkhaki', 'Si': 'lightslategray', 'SiO': 'darkturquoise', 'SiH4': 'mediumvioletred', 'Na': 'silver', '(NaCl)2': 'maroon', '(NaOH)2': 'hotpink', 'NaCl': 'rosybrown', 'K': 'black', '(KCl)2': 'chocolate', '(KOH)2': 'darkslateblue', 'KOH': 'lightgreen', 'KCl': 'darksalmon', 'S': 'cornflowerblue', 'H2S': 'darkgoldenrod', 'HS': 'yellowgreen', 'SO': 'mediumseagreen', 'SO2': 'skyblue', 'Al': 'khaki', 'AlOH': 'steelblue', 'Al2O': 'seagreen', 'OAlOH': 'tomato', 'Ca': 'orange', 'Ca(OH)2': 'indigo', 'e': 'darkgreen', 'Ti': 'crimson', 'TiO': 'brown', 'TiO2': 'indianred', 'VO': 'aquamarine', 'VO2': 'mediumaquamarine', 'V': 'darkcyan', 'Mg': 'sandybrown', 'MgH': 'lawngreen', 'Mg(OH)2': 'orangered', 'Fe': 'royalblue', 'FeH': 'wheat', 'Fe(OH)2': 'tan', 'F': 'yellow', 'OAlF2': 'sienna', 'TiF3': 'saddlebrown', 'AlF': 'orange', 'HF': 'lightblue', 'MnH': 'lime', 'Mn': 'rebeccapurple', 'PN': 'palegoldenrod', 'P': 'peachpuff', '(P2O3)2': 'cadetblue'}
+  {'H': 'blue', 'H2': 'deepskyblue', 'He': 'olive', 'C': 'coral', 'CH4': 'darkorange', 'CO': 'limegreen', 'CO2': 'red', 'HCN': 'dimgray', 'C2H2': 'pink', 'C2H4': 'deeppink', 'N': 'darkviolet', 'NH3': 'magenta', 'N2': 'gold', 'O': 'greenyellow', 'H2O': 'navy', 'OH': 'darkkhaki', 'Si': 'lightslategray', 'SiO': 'darkturquoise', 'SiH4': 'mediumvioletred', 'Na': 'silver', '(NaCl)2': 'maroon', '(NaOH)2': 'hotpink', 'NaCl': 'rosybrown', 'K': 'black', '(KCl)2': 'chocolate', '(KOH)2': 'darkslateblue', 'KOH': 'lightgreen', 'KCl': 'darksalmon', 'S': 'cornflowerblue', 'H2S': 'darkgoldenrod', 'SH': 'yellowgreen', 'SO': 'xkcd:green', 'SO2': 'skyblue', 'SiS': 'xkcd:wheat', 'Al': 'khaki', 'AlOH': 'steelblue', 'Al2O': 'seagreen', 'OAlOH': 'tomato', 'Ca': 'orange', 'Ca(OH)2': 'xkcd:blue', 'e': 'darkgreen', 'Ti': 'crimson', 'TiO': 'brown', 'TiO2': 'indianred', 'VO': 'aquamarine', 'VO2': 'mediumaquamarine', 'V': 'darkcyan', 'Mg': 'sandybrown', 'MgH': 'lawngreen', 'Mg(OH)2': 'orangered', 'Fe': 'royalblue', 'FeH': 'wheat', 'Fe(OH)2': 'tan', 'F': 'yellow', 'OAlF2': 'sienna', 'TiF3': 'saddlebrown', 'AlF': 'orange', 'HF': 'lightblue', 'MnH': 'lime', 'Mn': 'rebeccapurple', 'PN': 'palegoldenrod', 'P': 'peachpuff', '(P2O3)2': 'cadetblue'}
 
 .. py:function:: thermochemical_equilibrium(pressure, temperature, element_rel_abundance, stoich_vals, gibbs_funcs, tolx=2.22e-16, tolf=2.22e-16)
 .. code-block:: pycon
@@ -890,12 +828,12 @@ _____________
         abundance in dex units relative to H=12.0.
         These values (if any) override metallicity.
     e_scale: Dictionary of element-scaling pairs
-        Set custom elemental abundances by scaling from its solar value.
+        Set custom elemental abundances by scaling relative to solar
+        values in dex units.
         The dict contains the name of the element and their custom
-        scaling factor in dex units, e.g., for 2x solar carbon set
-        e_scale = {'C': np.log10(2.0)}.
-        This argument modifies the abundances on top of any custom
-        metallicity and e_abundances.
+        scaling factor in dex units, e.g., for 5x solar carbon set
+        e_scale = {'C': 0.7}.   # log10(5.0) = 0.7
+        This argument modifies overrides metallicity and e_abundances.
     e_ratio: Dictionary of element-ratio pairs
         Set custom elemental abundances by scaling relative to another
         element.
@@ -1077,7 +1015,7 @@ _____________
      'e': 'darkgreen',
      'H3': 'royalblue'}
 
-.. py:function:: plot_vmr(pressure, vmr, species, colors=None, vmr_range=None, fignum=320, title=None, fontsize=14, linewidth=2.0, rect=None, axis=None, savefig=None)
+.. py:function:: plot_vmr(pressure, vmr, species, colors=None, vmr_range=None, fignum=320, title=None, fontsize=14, linewidth=2.0, rect=None, axis=None, savefig=None, show_legends=True)
 .. code-block:: pycon
 
     Plot VMRs vs pressure.
@@ -1090,9 +1028,10 @@ _____________
         Volume mixing ratios of shape [nlayers, nspecies].
     species: 1D string iterable
         Names of the species in vmr.
-    colors: 1D iterable of strings
-        Color names to assign (sequentially) to the species.
+    colors: 1D iterable of strings or dict
         If None, default to chemcat.utils.COLOR_DICT values.
+        If list, color names to assign (sequentially) to the species.
+        If dict, the name--color pairs for each neutral species.
         Note that different ionic variations of a same species
         (e.g., H, H+, H-) are assigned a same color, but differ
         in line style.
@@ -1113,6 +1052,8 @@ _____________
         Axis where to draw the VMRs. If not None, overrides fignum.
     savefig: String
         If not None, file name where to save the figure.
+    show_legends: Bool
+        Flag indicating whether legends should be plotted.
 
     Returns
     -------
@@ -1133,7 +1074,7 @@ _____________
     >>>     'H2O CH4 CO CO2 NH3 N2 H2 HCN C2H2 C2H4 OH H He C N O '
     >>>     'e- H- H+ H2+ He+ '
     >>>     'Na Na- Na+ K K- K+ '
-    >>>     'Si S SiO SiH4 H2S HS SO SO2 SiS'
+    >>>     'Si S SiO SiH4 H2S SH SO SO2 SiS'
     >>> ).split()
 
     >>> net = cat.Network(pressure, temperature, molecs)
